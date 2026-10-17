@@ -62,7 +62,25 @@ section.grid { margin-bottom: 16px; }
 .stat { display: flex; justify-content: space-between; color: var(--text-2); }
 .stat b { color: var(--text); font-variant-numeric: tabular-nums; }
 
+.period { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.period button {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.period button:hover { color: var(--text); border-color: var(--text-2); }
+.period button[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--surface); }
+
 .chart-wrap { position: relative; height: 320px; }
+.clan-elo { display: grid; grid-template-columns: minmax(200px, 1fr) 3fr; gap: 16px; align-items: center; }
+.clan-elo .small-chart { height: 180px; }
+.elo-now { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+@media (max-width: 640px) { .clan-elo { grid-template-columns: 1fr; } }
 
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--border); }

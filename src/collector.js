@@ -13,8 +13,10 @@ export async function collect(store, profileIds, file) {
 
   let added = 0;
   for (const raw of history.matchHistoryStats ?? []) {
-    if (!store.matches[raw.id]) added++;
+    // Ferdige kamper endrer seg ikke, og eldre Relic-kamper har feil civ-id-er (rettet fra aoe2companion)
+    if (store.matches[raw.id]) continue;
     store.matches[raw.id] = normalizeMatch(raw);
+    added++;
   }
   // Skriv bare når noe er nytt, så GitHub Actions ikke lager en commit hver halvtime
   if (added || profilesChanged) {
