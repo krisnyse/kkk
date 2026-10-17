@@ -10,7 +10,8 @@
 <body>
   <header>
     <div class="brand">
-<svg class="logo" viewBox="0 0 480 142" role="img" aria-label="KKK Håkky: fire spillere med headset foran hver sin skjerm" xmlns="http://www.w3.org/2000/svg">
+<svg class="logo" viewBox="0 0 480 168" role="img" aria-label="KKK Håkky: OnklG, Paven, Sjefen og Ferdi med headset foran hver sin skjerm. Trykk på en for å se statistikken." xmlns="http://www.w3.org/2000/svg">
+      <a href="#spiller=387309" data-player-link="387309" class="logo-player">
       <g>
         <path d="M26 100q0-30 34-30t34 30z" fill="var(--series-1)"/>
         <circle cx="60" cy="46" r="18" fill="#f1c9a5"/>
@@ -26,7 +27,10 @@
         <rect x="30" y="90" width="60" height="34" rx="3" fill="var(--series-1)" opacity=".18"/>
         <path d="M38 118l9-12 8 6 9-14 9 9 8-5" fill="none" stroke="var(--series-1)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M50 130h20l4 8h-28z" fill="var(--border)"/>
+        <text x="60" y="161" text-anchor="middle">OnklG</text>
       </g>
+      </a>
+      <a href="#spiller=385760" data-player-link="385760" class="logo-player">
       <g>
         <path d="M146 100q0-30 34-30t34 30z" fill="var(--series-2)"/>
         <circle cx="180" cy="46" r="18" fill="#d9a273"/>
@@ -42,7 +46,10 @@
         <rect x="150" y="90" width="60" height="34" rx="3" fill="var(--series-2)" opacity=".18"/>
         <path d="M158 118l9-12 8 6 9-14 9 9 8-5" fill="none" stroke="var(--series-2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M170 130h20l4 8h-28z" fill="var(--border)"/>
+        <text x="180" y="161" text-anchor="middle">Paven</text>
       </g>
+      </a>
+      <a href="#spiller=384880" data-player-link="384880" class="logo-player">
       <g>
         <path d="M266 100q0-30 34-30t34 30z" fill="var(--series-3)"/>
         <circle cx="300" cy="46" r="18" fill="#f4d2b5"/>
@@ -58,7 +65,10 @@
         <rect x="270" y="90" width="60" height="34" rx="3" fill="var(--series-3)" opacity=".18"/>
         <path d="M278 118l9-12 8 6 9-14 9 9 8-5" fill="none" stroke="var(--series-3)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M290 130h20l4 8h-28z" fill="var(--border)"/>
+        <text x="300" y="161" text-anchor="middle">Sjefen</text>
       </g>
+      </a>
+      <a href="#spiller=384303" data-player-link="384303" class="logo-player">
       <g>
         <path d="M386 100q0-30 34-30t34 30z" fill="var(--series-4)"/>
         <circle cx="420" cy="46" r="18" fill="#b97f55"/>
@@ -74,7 +84,9 @@
         <rect x="390" y="90" width="60" height="34" rx="3" fill="var(--series-4)" opacity=".18"/>
         <path d="M398 118l9-12 8 6 9-14 9 9 8-5" fill="none" stroke="var(--series-4)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M410 130h20l4 8h-28z" fill="var(--border)"/>
+        <text x="420" y="161" text-anchor="middle">Ferdi</text>
       </g>
+      </a>
     </svg>
     <h1>KKK Håkky</h1>
     </div>
@@ -195,6 +207,12 @@
 
   <dialog id="match-dialog" aria-labelledby="match-title">
     <div id="match-body"></div>
+  </dialog>
+
+  <dialog id="player-dialog" class="sheet" aria-labelledby="player-title">
+    <div id="player-body"></div>
+    <div class="chart-wrap player-chart" id="player-chart-wrap"><canvas id="player-chart" aria-label="Lagrating over tid"></canvas></div>
+    <div id="player-tables"></div>
   </dialog>
 
   <script src="app.js" type="module"></script>

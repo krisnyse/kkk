@@ -226,12 +226,13 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
     since,
     totalMatches: recent.length,
     clanElo: clanElo(store, players, since, now),
-    players: players.map(({ profileId }) => {
+    players: players.map(({ profileId, nick }) => {
       const s = perPlayer.get(profileId);
       const profile = store.profiles[profileId] ?? {};
       return {
         profileId,
         name: nameOf(profileId),
+        nick: nick ?? null,
         country: profile.country ?? null,
         ratings: profile.ratings ?? {},
         games: s.games,
