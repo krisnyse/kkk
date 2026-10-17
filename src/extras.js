@@ -224,3 +224,24 @@ export function matchDetail(store, players, id) {
     mapWins: onMap.filter((x) => x.players.find((p) => clanIds.has(p.profileId)).won).length,
   };
 }
+
+// Formen de siste 5 kampene med minst én av oss, uansett valgt periode.
+// 4–5 seire = opp, 2–3 = bortover, 0–1 = ned. Elo-endringen er snittet for oss som spilte, summert over kampene.
+const FORM_GAMES = 5;
+export function form(store, players) {
+  const clanIds = new Set(players.map((p) => p.profileId));
+  const last = Object.values(store.matches)
+    .filter((m) => m.players.some((p) => clanIds.has(p.profileId)))
+    .sort((a, b) => b.start - a.start)
+    .slice(0, FORM_GAMES)
+    .reverse();
+  if (!last.length) return null;
+  const games = last.map((m) => {
+    const ours = m.players.filter((p) => clanIds.has(p.profileId));
+    const changes = ours.map(change).filter((c) => c != null);
+    return { ...matchRef(m), won: ours[0].won, eloChange: changes.length ? avg(changes) : null };
+  });
+  const wins = games.filter((g) => g.won).length;
+  const trend = wins >= 4 ? 'up' : wins <= 1 ? 'down' : 'flat';
+  return { trend, wins, games, eloChange: games.reduce((sum, g) => sum + (g.eloChange ?? 0), 0) };
+}

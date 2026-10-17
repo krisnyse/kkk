@@ -76,6 +76,22 @@ function render(stats) {
       </article>`;
   }).join('');
 
+  // Form: pil opp, bortover eller ned ut fra de siste 5 kampene (uavhengig av periode)
+  const f = stats.form;
+  const formBox = document.getElementById('form');
+  formBox.hidden = !f;
+  if (f) {
+    const label = { up: 'I form', flat: 'Middels form', down: 'Ute av form' }[f.trend];
+    formBox.className = `form-box ${f.trend}`;
+    formBox.innerHTML = `
+      <div class="form-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div>
+        <h2 id="form-title">${label}</h2>
+        <div class="form-sub">${f.wins} av ${f.games.length} siste kamper vunnet${f.eloChange ? ` · ${upDown(f.eloChange)} Elo` : ''}</div>
+        <div class="form-dots">${f.games.map((g) => `<a href="#kamp=${g.id}" data-match="${g.id}" class="${g.won ? 'won' : 'lost'}" title="${g.won ? 'Seier' : 'Tap'} · ${esc(g.map)} · ${time(g.start)}">${g.won ? 'S' : 'T'}</a>`).join('')}</div>
+      </div>`;
+  }
+
   // Siste kamp (uavhengig av periode)
   const lm = stats.lastMatch;
   const box = document.getElementById('last-match');

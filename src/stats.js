@@ -1,7 +1,7 @@
 // Regner ut all statistikken siden viser, fra lagrede kamper.
 import { civName } from './civs.js';
 import { mapName, matchTypeName } from './normalize.js';
-import { civPairs4v4, expectedScore, records, weekly } from './extras.js';
+import { civPairs4v4, expectedScore, form, records, weekly } from './extras.js';
 
 const TEAM_RM = new Set([7, 8, 9]);
 
@@ -250,6 +250,7 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
     clanMaps: toList(clanMaps).slice(0, 10),
     recent: recent.reverse().slice(0, 25),
     lastMatch: lastMatch(store, players, nameOf),
+    form: form(store, players),
     weekly: weekly(store, players, now),
     records: records(matches, clanIds, nameOf),
     civPairs4v4: civPairs4v4(matches, clanIds),

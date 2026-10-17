@@ -188,3 +188,23 @@ test('burde vunnet-score fra Elo', async () => {
   assert.equal(dog.verdict, 'Sjokkseier');
   assert.equal(expectedScore(match(null, 1400, true), clanIds), null);
 });
+
+test('form ut fra de siste 5 kampene', async () => {
+  const { form } = await import('../src/extras.js');
+  const store = (results) => ({
+    matches: Object.fromEntries(results.map((won, i) => [i, {
+      id: i, start: 1000 + i, mapFile: 'arabia.rms', matchType: 9,
+      players: [
+        { profileId: 387309, team: 1, won, oldRating: 1200, newRating: won ? 1210 : 1190 },
+        { profileId: 1, team: 2, won: !won },
+      ],
+    }])),
+  });
+  // Den eldste kampen er utenfor de siste 5
+  const up = form(store([false, true, true, false, true, true]), PLAYERS);
+  assert.deepEqual([up.trend, up.wins, up.games.length, up.eloChange], ['up', 4, 5, 30]);
+  assert.deepEqual(up.games.map((g) => g.won), [true, true, false, true, true]);
+  assert.equal(form(store([true, false, true, false, false]), PLAYERS).trend, 'flat');
+  assert.equal(form(store([false, false, true, false, false]), PLAYERS).trend, 'down');
+  assert.equal(form({ matches: {} }, PLAYERS), null);
+});
