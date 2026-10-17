@@ -208,3 +208,9 @@ test('form ut fra de siste 5 kampene', async () => {
   assert.equal(form(store([false, false, true, false, false]), PLAYERS).trend, 'down');
   assert.equal(form({ matches: {} }, PLAYERS), null);
 });
+
+test('fetchedAt er siste henting, ellers siste oppdatering av data', () => {
+  const store = { ...buildStore(), updatedAt: '2026-10-17T18:00:00.000Z' };
+  assert.equal(computeStats(store, PLAYERS).fetchedAt, '2026-10-17T18:00:00.000Z');
+  assert.equal(computeStats(store, PLAYERS, { fetchedAt: '2026-10-17T19:10:00.000Z' }).fetchedAt, '2026-10-17T19:10:00.000Z');
+});

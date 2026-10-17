@@ -51,13 +51,38 @@ function table(el, rows, nameHeader) {
     </tbody>`;
 }
 
+// «Data hentet» under logoen, med hvor lenge siden. Oppdateres hvert minutt uten å laste data på nytt.
+function ago(ms) {
+  const min = Math.round(ms / 60_000);
+  if (min < 1) return 'akkurat nå';
+  if (min < 60) return `for ${min} min siden`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `for ${h} t ${min % 60} min siden`;
+  const d = Math.floor(h / 24);
+  return `for ${d} ${d === 1 ? 'dag' : 'dager'} siden`;
+}
+function renderFetched() {
+  const el = document.getElementById('fetched');
+  const at = current?.fetchedAt;
+  el.hidden = !at;
+  if (!at) return;
+  const when = new Date(at);
+  const today = when.toDateString() === new Date().toDateString();
+  const clock = when.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
+  const day = today ? 'i dag' : when.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' });
+  const last = current.lastMatch ? ` · siste kamp ${time(current.lastMatch.start)}` : '';
+  el.innerHTML = `<span class="fetched-dot" aria-hidden="true"></span>Data hentet ${day} kl. ${clock} <span class="muted">(${ago(Date.now() - when)})${last}</span>`;
+}
+setInterval(renderFetched, 60_000);
+
 function render(stats) {
   current = stats;
   // Fargen følger spilleren, uansett periode
   colorOf = new Map(stats.players.map((p, i) => [p.profileId, SERIES[i]]));
 
+  renderFetched();
   document.getElementById('updated').textContent = stats.updatedAt
-    ? `${stats.totalMatches} kamper i perioden · sist oppdatert ${new Date(stats.updatedAt).toLocaleString('no-NO')}`
+    ? `${stats.totalMatches} kamper i perioden`
     : 'Ingen data hentet ennå. Serveren henter ved oppstart og deretter jevnlig.';
 
 
