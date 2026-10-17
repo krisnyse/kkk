@@ -22,10 +22,13 @@ function toList(map, label = (k) => k) {
     .sort((a, b) => b.games - a.games || b.winRate - a.winRate);
 }
 
-export function computeStats(store, players) {
+// since: unix-sekunder; bare kamper som startet etter dette tas med (null = alle)
+export function computeStats(store, players, { since = null } = {}) {
   const clanIds = new Set(players.map((p) => p.profileId));
   const nameOf = (id) => store.profiles[id]?.name ?? players.find((p) => p.profileId === id)?.name ?? String(id);
-  const matches = Object.values(store.matches).sort((a, b) => a.start - b.start);
+  const matches = Object.values(store.matches)
+    .filter((m) => since == null || m.start >= since)
+    .sort((a, b) => a.start - b.start);
 
   const perPlayer = new Map(players.map((p) => [p.profileId, {
     games: 0, wins: 0, civs: new Map(), maps: new Map(), ratingHistory: [],
@@ -46,7 +49,7 @@ export function computeStats(store, players) {
       tally(s.civs, civKey(p), p.won);
       tally(s.maps, mapName(m.mapFile), p.won);
       tally(clanCivs, civKey(p), p.won);
-      if (TEAM_RM.has(m.matchType) && p.newRating) s.ratingHistory.push({ t: m.end || m.start, rating: p.newRating });
+      if (TEAM_RM.has(m.matchType) && p.newRating) s.ratingHistory.push({ t: m.start, rating: p.newRating });
     }
 
     // Kamper der minst to av oss var på samme lag
@@ -80,6 +83,7 @@ export function computeStats(store, players) {
 
   return {
     updatedAt: store.updatedAt,
+    since,
     totalMatches: recent.length,
     players: players.map(({ profileId }) => {
       const s = perPlayer.get(profileId);

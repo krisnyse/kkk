@@ -39,3 +39,14 @@ test('statistikk per spiller og lagoppsett', () => {
   assert.equal(s.recent[0].id, 514148551);
   assert.equal(s.recent[0].teams[1].players.find((p) => p.name === 'DataPaven').civ, 'Danes');
 });
+
+test('statistikk kan begrenses til en tidsperiode', async () => {
+  const { periodStart } = await import('../src/periods.js');
+  const store = buildStore();
+  // Fixture-kampene er fra 2020 og okt. 2026; «siste uke» regnet fra 17. okt 2026 tar bare de nyeste
+  const now = Date.parse('2026-10-17T12:00:00Z');
+  const week = computeStats(store, PLAYERS, { since: periodStart('1w', now) });
+  assert.equal(week.totalMatches, 2);
+  assert.equal(computeStats(store, PLAYERS, { since: periodStart('all', now) }).totalMatches, 4);
+  assert.equal(computeStats(store, PLAYERS, { since: periodStart('5y', now) }).totalMatches, 3);
+});
