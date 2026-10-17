@@ -66,11 +66,17 @@ test('klan-Elo er snittet av siste lag-RM-rating per spiller, dag for dag', () =
       3: { ...team(3, t(5), { 385760: 900 }), matchType: 6 }, // 1v1 teller ikke
     },
   };
-  // Klan-Elo avhenger ikke av valgt periode
-  const { clanElo } = computeStats(store, PLAYERS, { since: t(1), now });
+  // Klan-Elo følger valgt periode: 30 dager gir 31 daglige punkter
+  const { clanElo } = computeStats(store, PLAYERS, { since: t(30), now });
   assert.equal(clanElo.points.length, 31);
   assert.equal(clanElo.points[0].rating, 1100);
   assert.equal(clanElo.points[0].players, 2);
   assert.equal(clanElo.current, 1150);
   assert.equal(clanElo.change, 50);
+
+  // Hele perioden starter ved første lagkamp (60 dager siden)
+  const all = computeStats(store, PLAYERS, { since: null, now }).clanElo;
+  assert.equal(all.points.length, 61);
+  assert.equal(all.points[0].rating, 1100);
+  assert.equal(all.change, 50);
 });

@@ -54,12 +54,12 @@ function render(stats) {
       </article>`;
   }).join('');
 
-  // Klan-Elo: samme 30 dager uansett periode
+  // Klan-Elo: følger valgt periode
   const elo = stats.clanElo;
   document.getElementById('clan-elo-now').textContent = elo?.current ?? '–';
   const change = document.getElementById('clan-elo-change');
   change.innerHTML = elo?.change != null
-    ? `<span class="${elo.change >= 0 ? 'up' : 'down'}">${elo.change >= 0 ? '+' : '−'}${Math.abs(elo.change)}</span> siste 30 dager`
+    ? `<span class="${elo.change >= 0 ? 'up' : 'down'}">${elo.change >= 0 ? '+' : '−'}${Math.abs(elo.change)}</span> i perioden`
     : '';
   eloChart?.destroy();
   eloChart = null;

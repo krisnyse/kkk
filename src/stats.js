@@ -23,12 +23,13 @@ function toList(map, label = (k) => k) {
 }
 
 const DAY = 24 * 60 * 60;
-const CLAN_ELO_DAYS = 30;
+const MAX_ELO_POINTS = 400;
 
-// Felles klan-Elo: snittet av lag-RM-ratingen til spillerne, ett punkt per døgn de siste 30 dagene.
+// Felles klan-Elo: snittet av lag-RM-ratingen til spillerne, ett punkt per døgn fra periodens start til nå.
 // Hver spiller teller med siste rating de hadde ved punktet, så dager uten kamper beholder forrige verdi.
-// Bruker alle lagrede kamper uansett valgt periode, ellers ville ratingen før perioden manglet.
-function clanElo(store, players, now) {
+// Ratingen før perioden hentes fra alle lagrede kamper, ellers ville startverdien mangle.
+// Uten since (hele perioden) starter tidslinjen ved første lagrede lagkamp. Lange perioder tynnes ut til ca. 400 punkter.
+function clanElo(store, players, since, now) {
   const clanIds = new Set(players.map((p) => p.profileId));
   const history = new Map(players.map((p) => [p.profileId, []]));
   for (const m of Object.values(store.matches).sort((a, b) => a.start - b.start)) {
@@ -39,11 +40,21 @@ function clanElo(store, players, now) {
   }
 
   const end = Math.floor(now / 1000);
+  const first = Math.min(...[...history.values()].filter((h) => h.length).map((h) => h[0].t));
+  const start = since ?? first;
+  if (!Number.isFinite(start)) return { current: null, change: null, points: [] };
+
+  const days = Math.max(0, Math.ceil((end - start) / DAY));
+  const step = Math.max(1, Math.ceil(days / MAX_ELO_POINTS));
   const points = [];
-  for (let day = CLAN_ELO_DAYS; day >= 0; day--) {
+  for (let day = days; day >= 0; day -= step) {
     const t = end - day * DAY;
     const ratings = [...history.values()].map((h) => h.findLast((x) => x.t <= t)?.rating).filter((r) => r != null);
     if (ratings.length) points.push({ t, rating: Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length), players: ratings.length });
+  }
+  if (days % step) {
+    const ratings = [...history.values()].map((h) => h.findLast((x) => x.t <= end)?.rating).filter((r) => r != null);
+    if (ratings.length) points.push({ t: end, rating: Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length), players: ratings.length });
   }
   return {
     current: points.at(-1)?.rating ?? null,
@@ -116,7 +127,7 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
     updatedAt: store.updatedAt,
     since,
     totalMatches: recent.length,
-    clanElo: clanElo(store, players, now),
+    clanElo: clanElo(store, players, since, now),
     players: players.map(({ profileId }) => {
       const s = perPlayer.get(profileId);
       const profile = store.profiles[profileId] ?? {};
