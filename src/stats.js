@@ -110,6 +110,7 @@ function lastMatch(store, players, nameOf) {
     map,
     type: m.typeName ?? matchTypeName(m.matchType),
     won: ours[0].won,
+    expected: expectedScore(m, clanIds),
     teamSize: mine.length,
     clanPlayers: ours.map((p) => ({
       name: nameOf(p.profileId),

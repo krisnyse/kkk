@@ -83,7 +83,7 @@ function render(stats) {
     box.innerHTML = `
       <h2>Siste kamp</h2>
       <div class="lm-head"><span class="lm-result">${lm.won ? 'Seier' : 'Tap'}</span>
-        <span>${esc(lm.map)} · ${esc(lm.type)}</span><span class="muted">${time(lm.start)}${lm.duration ? ` · ${minutes(lm.duration)}` : ''}</span></div>
+        <span>${esc(lm.map)} · ${esc(lm.type)}</span><span class="muted">${time(lm.start)}${lm.duration ? ` · ${minutes(lm.duration)}` : ''}</span>${expectedBadge(lm.expected)}</div>
       <div class="lm-players">${lm.clanPlayers.map((p) => `
         <div><b>${esc(p.name)}</b> ${esc(p.civ)}${p.ratingChange != null ? ` <span class="${p.ratingChange >= 0 ? 'up' : 'down'}">${p.ratingChange >= 0 ? '+' : '−'}${Math.abs(p.ratingChange)}</span>` : ''}</div>`).join('')}</div>
       <div class="lm-stats">
