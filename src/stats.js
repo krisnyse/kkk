@@ -4,6 +4,10 @@ import { mapName, matchTypeName } from './normalize.js';
 
 const TEAM_RM = new Set([7, 8, 9]);
 
+// Kamper fra aoe2companion kan ha civ eller kamptype vi ikke har id for; da brukes navnet direkte
+const civKey = (p) => p.civId ?? p.civName;
+const civLabel = (key) => (typeof key === 'string' ? key : civName(key));
+
 function tally(map, key, won) {
   const t = map.get(key) ?? { games: 0, wins: 0 };
   t.games++;
@@ -39,9 +43,9 @@ export function computeStats(store, players) {
       const s = perPlayer.get(p.profileId);
       s.games++;
       if (p.won) s.wins++;
-      tally(s.civs, p.civId, p.won);
-      tally(s.maps, m.mapFile, p.won);
-      tally(clanCivs, p.civId, p.won);
+      tally(s.civs, civKey(p), p.won);
+      tally(s.maps, mapName(m.mapFile), p.won);
+      tally(clanCivs, civKey(p), p.won);
       if (TEAM_RM.has(m.matchType) && p.newRating) s.ratingHistory.push({ t: m.end || m.start, rating: p.newRating });
     }
 
@@ -51,7 +55,7 @@ export function computeStats(store, players) {
       if (team.length < 2) continue;
       const key = team.map((p) => p.profileId).sort((a, b) => a - b).join(',');
       tally(lineups, key, team[0].won);
-      tally(clanMaps, m.mapFile, team[0].won);
+      tally(clanMaps, mapName(m.mapFile), team[0].won);
     }
 
     recent.push({
@@ -59,7 +63,7 @@ export function computeStats(store, players) {
       start: m.start,
       duration: m.end && m.start ? m.end - m.start : null,
       map: mapName(m.mapFile),
-      type: matchTypeName(m.matchType),
+      type: m.typeName ?? matchTypeName(m.matchType),
       teams: [...Map.groupBy(m.players, (p) => p.team).entries()]
         .sort(([a], [b]) => a - b)
         .map(([, ps]) => ({
@@ -67,7 +71,7 @@ export function computeStats(store, players) {
           players: ps.map((p) => ({
             name: clanIds.has(p.profileId) ? nameOf(p.profileId) : null,
             clan: clanIds.has(p.profileId),
-            civ: civName(p.civId),
+            civ: civLabel(civKey(p)),
             ratingChange: p.newRating != null && p.oldRating != null ? p.newRating - p.oldRating : null,
           })),
         })),
@@ -88,15 +92,15 @@ export function computeStats(store, players) {
         games: s.games,
         wins: s.wins,
         winRate: s.games ? s.wins / s.games : null,
-        civs: toList(s.civs, civName).slice(0, 8),
-        maps: toList(s.maps, mapName).slice(0, 8),
+        civs: toList(s.civs, civLabel).slice(0, 8),
+        maps: toList(s.maps).slice(0, 8),
         ratingHistory: s.ratingHistory,
       };
     }),
     lineups: toList(lineups, (k) => k.split(',').map((id) => nameOf(Number(id))).join(' + '))
       .map((l) => ({ ...l, size: l.key.split(',').length })),
-    clanCivs: toList(clanCivs, civName).slice(0, 12),
-    clanMaps: toList(clanMaps, mapName).slice(0, 10),
+    clanCivs: toList(clanCivs, civLabel).slice(0, 12),
+    clanMaps: toList(clanMaps).slice(0, 10),
     recent: recent.reverse().slice(0, 25),
   };
 }
