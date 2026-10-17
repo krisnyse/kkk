@@ -50,3 +50,27 @@ test('statistikk kan begrenses til en tidsperiode', async () => {
   assert.equal(computeStats(store, PLAYERS, { since: periodStart('all', now) }).totalMatches, 4);
   assert.equal(computeStats(store, PLAYERS, { since: periodStart('5y', now) }).totalMatches, 3);
 });
+
+test('klan-Elo er snittet av siste lag-RM-rating per spiller, dag for dag', () => {
+  const now = Date.parse('2026-10-17T12:00:00Z');
+  const t = (daysAgo) => now / 1000 - daysAgo * 86400;
+  const team = (id, start, ratings) => ({
+    id, mapFile: 'Arabia.rms', matchType: 7, start, end: start + 1800,
+    players: Object.entries(ratings).map(([profileId, newRating]) => ({ profileId: Number(profileId), team: 1, won: true, oldRating: newRating, newRating })),
+  });
+  const store = {
+    profiles: {},
+    matches: {
+      1: team(1, t(60), { 387309: 1200, 385760: 1000 }), // før måneden: gir startverdien
+      2: team(2, t(10), { 387309: 1300 }),
+      3: { ...team(3, t(5), { 385760: 900 }), matchType: 6 }, // 1v1 teller ikke
+    },
+  };
+  // Klan-Elo avhenger ikke av valgt periode
+  const { clanElo } = computeStats(store, PLAYERS, { since: t(1), now });
+  assert.equal(clanElo.points.length, 31);
+  assert.equal(clanElo.points[0].rating, 1100);
+  assert.equal(clanElo.points[0].players, 2);
+  assert.equal(clanElo.current, 1150);
+  assert.equal(clanElo.change, 50);
+});

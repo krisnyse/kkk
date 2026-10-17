@@ -16,7 +16,7 @@ await mkdir(`${DIST}api`, { recursive: true });
 // Periodene regnes fra byggetidspunktet; siden bygges på nytt hver gang det kommer nye kamper
 const now = Date.now();
 for (const { key } of PERIODS) {
-  const stats = computeStats(store, PLAYERS, { since: periodStart(key, now) });
+  const stats = computeStats(store, PLAYERS, { since: periodStart(key, now), now });
   await writeFile(`${DIST}api/stats-${key}.json`, JSON.stringify(stats));
   if (key === 'all') {
     await writeFile(`${DIST}api/stats.json`, JSON.stringify(stats));
