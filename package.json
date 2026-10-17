@@ -1,0 +1,14 @@
+{
+  "name": "kkk-dashboard",
+  "version": "0.1.0",
+  "description": "Statistikk-side for KKK-klanen i Age of Empires II: DE",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  }
+}

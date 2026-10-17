@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KKK Håkky</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>KKK Håkky</h1>
+    <p class="muted" id="updated">Laster …</p>
+  </header>
+
+  <main>
+    <section class="cards" id="players"></section>
+
+    <section class="panel">
+      <h2>Lagrating over tid</h2>
+      <p class="muted small">Ny rating etter hver rangert lagkamp (RM 2v2–4v4).</p>
+      <div class="chart-wrap"><canvas id="rating-chart" aria-label="Lagrating over tid per spiller"></canvas></div>
+      <p class="muted small" id="rating-empty" hidden>Ingen rangerte lagkamper lagret ennå.</p>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Lagoppsett</h2>
+        <p class="muted small">Kamper der minst to av oss var på samme lag.</p>
+        <table id="lineups"></table>
+      </div>
+      <div class="panel">
+        <h2>Beste kart sammen</h2>
+        <p class="muted small">Kamper med minst to av oss på laget.</p>
+        <table id="clan-maps"></table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Civer per spiller</h2>
+      <div class="grid" id="player-civs"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Siste kamper</h2>
+      <div id="recent"></div>
+    </section>
+  </main>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
