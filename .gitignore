@@ -3,3 +3,4 @@ dist/
 data/*
 !data/matches.json
 .vercel
+.env*
