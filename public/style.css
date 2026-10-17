@@ -117,3 +117,6 @@ h4 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 
 .lm-result { font-weight: 700; font-size: 20px; }
 .lm-players { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-bottom: 8px; }
 .lm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 4px 16px; }
+
+.brand { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 4px; }
+.logo { width: 340px; max-width: 100%; height: auto; flex: none; }
