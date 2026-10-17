@@ -11,6 +11,7 @@
     "start": "node src/server.js",
     "collect": "node scripts/collect.js",
     "build": "node scripts/build.js",
+    "import-history": "node scripts/import-companion.js",
     "test": "node --test test/*.test.js"
   }
 }
