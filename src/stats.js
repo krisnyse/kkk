@@ -23,6 +23,24 @@ function toList(map, label = (k) => k) {
 }
 
 const DAY = 24 * 60 * 60;
+const TZ = 'Europe/Oslo';
+const WEEKDAYS = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+const weekdayFmt = new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: TZ });
+const hourFmt = new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: TZ });
+const monthFmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', timeZone: TZ });
+const WEEKDAY_INDEX = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+
+// Bøtter i fast rekkefølge; hver har en øvre grense (eksklusiv) og et navn
+const LENGTH_BUCKETS = [[25, 'Under 25 min'], [35, '25–35 min'], [45, '35–45 min'], [Infinity, 'Over 45 min']];
+const RATING_DIFF_BUCKETS = [[-100, 'Over 100 lavere'], [-25, '25–100 lavere'], [25, 'Omtrent lik'], [100, '25–100 høyere'], [Infinity, 'Over 100 høyere']];
+const HOUR_BUCKETS = [[18, 'Før kl. 18'], [21, 'Kl. 18–21'], [24, 'Kl. 21–24']];
+const bucketOf = (buckets, x) => buckets.find(([max]) => x < max)[1];
+
+// Som toList, men i fast rekkefølge og uten tomme bøtter
+const ordered = (map, keys) => keys.filter((k) => map.has(k)).map((k) => {
+  const t = map.get(k);
+  return { key: k, name: k, ...t, winRate: t.wins / t.games };
+});
 const MAX_ELO_POINTS = 400;
 
 // Felles klan-Elo: snittet av lag-RM-ratingen til spillerne, ett punkt per døgn fra periodens start til nå.
@@ -104,6 +122,14 @@ function lastMatch(store, players, nameOf) {
   };
 }
 
+// Fiende-civer vi oftest taper og vinner mot. Krever nok kamper til at winraten betyr noe.
+function enemyCivsList(map) {
+  const all = toList(map, civLabel);
+  const minGames = Math.max(5, Math.round(Math.max(0, ...all.map((c) => c.games)) * 0.1));
+  const enough = all.filter((c) => c.games >= minGames).sort((a, b) => a.winRate - b.winRate || b.games - a.games);
+  return { minGames, worst: enough.slice(0, 6), best: enough.slice(-6).reverse() };
+}
+
 // since: unix-sekunder; bare kamper som startet etter dette tas med (null = alle)
 // now: millisekunder; tidspunktet klan-Elo-tidslinjen regnes bakover fra
 export function computeStats(store, players, { since = null, now = Date.now() } = {}) {
@@ -120,6 +146,13 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
   const clanCivs = new Map();
   const clanMaps = new Map();
   const recent = [];
+  const byMonth = new Map();
+  const enemyCivs = new Map();
+  const byRatingDiff = new Map();
+  const byLength = new Map();
+  const byWeekday = new Map();
+  const byHour = new Map();
+  const streaks = new Map(players.map((p) => [p.profileId, { current: 0, bestWin: 0, bestLoss: 0 }]));
 
   for (const m of matches) {
     const ours = m.players.filter((p) => clanIds.has(p.profileId));
@@ -133,6 +166,27 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
       tally(s.maps, mapName(m.mapFile), p.won);
       tally(clanCivs, civKey(p), p.won);
       if (TEAM_RM.has(m.matchType) && p.newRating) s.ratingHistory.push({ t: m.start, rating: p.newRating });
+      // Positiv = seiere på rad, negativ = tap på rad
+      const st = streaks.get(p.profileId);
+      st.current = p.won ? Math.max(st.current, 0) + 1 : Math.min(st.current, 0) - 1;
+      st.bestWin = Math.max(st.bestWin, st.current);
+      st.bestLoss = Math.max(st.bestLoss, -st.current);
+    }
+
+    // Trendene bruker bare rangerte lagkamper, så tallene er sammenlignbare
+    if (TEAM_RM.has(m.matchType)) {
+      const won = ours[0].won;
+      const date = new Date(m.start * 1000);
+      tally(byMonth, monthFmt.format(date), won);
+      tally(byWeekday, WEEKDAYS[WEEKDAY_INDEX[weekdayFmt.format(date)]], won);
+      const hour = Number(hourFmt.format(date));
+      tally(byHour, hour < 6 ? 'Etter midnatt' : bucketOf(HOUR_BUCKETS, hour), won);
+      if (m.end) tally(byLength, bucketOf(LENGTH_BUCKETS, (m.end - m.start) / 60), won);
+      const enemies = m.players.filter((p) => p.team !== ours[0].team);
+      for (const e of enemies) tally(enemyCivs, civKey(e), won);
+      const ourRatings = m.players.filter((p) => p.team === ours[0].team && p.oldRating).map((p) => p.oldRating);
+      const theirRatings = enemies.filter((p) => p.oldRating).map((p) => p.oldRating);
+      if (ourRatings.length && theirRatings.length) tally(byRatingDiff, bucketOf(RATING_DIFF_BUCKETS, avg(ourRatings) - avg(theirRatings)), won);
     }
 
     // Kamper der minst to av oss var på samme lag
@@ -183,6 +237,7 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
         civs: toList(s.civs, civLabel).slice(0, 8),
         maps: toList(s.maps).slice(0, 8),
         ratingHistory: s.ratingHistory,
+        streaks: streaks.get(profileId),
       };
     }),
     lineups: toList(lineups, (k) => k.split(',').map((id) => nameOf(Number(id))).join(' + '))
@@ -191,5 +246,13 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
     clanMaps: toList(clanMaps).slice(0, 10),
     recent: recent.reverse().slice(0, 25),
     lastMatch: lastMatch(store, players, nameOf),
+    trends: {
+      byMonth: [...byMonth.keys()].sort().map((k) => ({ key: k, ...byMonth.get(k), winRate: byMonth.get(k).wins / byMonth.get(k).games })),
+      enemyCivs: enemyCivsList(enemyCivs),
+      byRatingDiff: ordered(byRatingDiff, RATING_DIFF_BUCKETS.map(([, n]) => n)),
+      byLength: ordered(byLength, LENGTH_BUCKETS.map(([, n]) => n)),
+      byWeekday: ordered(byWeekday, WEEKDAYS),
+      byHour: ordered(byHour, [...HOUR_BUCKETS.map(([, n]) => n), 'Etter midnatt']),
+    },
   };
 }
