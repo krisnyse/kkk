@@ -163,3 +163,28 @@ test('civ-par i 4v4, rekorder, ukesoppsummering og kampside', async () => {
   assert.equal(d.mapGames, 3);
   assert.equal(matchDetail(store, PLAYERS, '999'), null);
 });
+
+test('burde vunnet-score fra Elo', async () => {
+  const { expectedScore } = await import('../src/extras.js');
+  const clanIds = new Set(PLAYERS.map((p) => p.profileId));
+  const match = (our, their, won) => ({
+    players: [
+      { profileId: 387309, team: 1, won, oldRating: our },
+      { profileId: 1, team: 2, won: !won, oldRating: their },
+    ],
+  });
+  assert.equal(expectedScore(match(1200, 1200, true), clanIds).score, 5);
+  // 75 høyere gir 8 av 10 (ett steg per 25 poeng), og 200 høyere når taket
+  const eight = expectedScore(match(1275, 1200, true), clanIds);
+  assert.deepEqual([eight.score, eight.verdict], [8, 'Som ventet']);
+  assert.equal(expectedScore(match(1200, 1240, true), clanIds).verdict, 'Seier som underdog');
+  assert.equal(expectedScore(match(1240, 1200, false), clanIds).verdict, 'Tap som favoritt');
+  const fav = expectedScore(match(1400, 1200, false), clanIds);
+  assert.equal(fav.score, 10);
+  assert.ok(Math.abs(fav.winChance - 0.76) < 0.01);
+  assert.equal(fav.verdict, 'Burde vunnet');
+  const dog = expectedScore(match(1200, 1400, true), clanIds);
+  assert.equal(dog.score, 0);
+  assert.equal(dog.verdict, 'Sjokkseier');
+  assert.equal(expectedScore(match(null, 1400, true), clanIds), null);
+});

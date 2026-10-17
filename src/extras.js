@@ -24,6 +24,25 @@ function sides(m, clanIds) {
   return { ours, won: ours[0].won, ourRating: rating(mine), theirRating: rating(theirs) };
 }
 
+// Hvor mye vi «burde» vinne ut fra Elo, 0–10 (10 = klare favoritter, 5 = helt jevnt, 0 = klare underdogs).
+// Matchmakingen gir nesten alltid jevne lag, så ren vinnersjanse ville havnet på 4–6. Derfor er ett steg
+// 25 poeng forskjell i snittrating, slik at 125 eller mer gir 0 eller 10. Vinnersjansen (vanlig Elo-formel) følger med.
+const SCORE_STEP = 25;
+export function expectedScore(m, clanIds) {
+  if (!m.players.some((p) => clanIds.has(p.profileId))) return null;
+  const { won, ourRating, theirRating } = sides(m, clanIds);
+  if (ourRating == null || theirRating == null) return null;
+  const winChance = 1 / (1 + 10 ** ((theirRating - ourRating) / 400));
+  const score = Math.min(10, Math.max(0, Math.round(5 + (ourRating - theirRating) / SCORE_STEP)));
+  let verdict = 'Jevn kamp';
+  if (won && score <= 2) verdict = 'Sjokkseier';
+  else if (won && score <= 4) verdict = 'Seier som underdog';
+  else if (!won && score >= 8) verdict = 'Burde vunnet';
+  else if (!won && score >= 6) verdict = 'Tap som favoritt';
+  else if (score !== 5) verdict = 'Som ventet';
+  return { score, winChance, ourRating, theirRating, verdict };
+}
+
 const matchRef = (m) => ({ id: m.id, start: m.start, map: mapName(m.mapFile), type: m.typeName ?? matchTypeName(m.matchType) });
 
 // Civ-par blant oss når alle fire spiller 4v4 på samme lag. Hver kamp gir seks par.
@@ -200,6 +219,7 @@ export function matchDetail(store, players, id) {
           change: change(p),
         })),
       })),
+    expected: expectedScore(m, clanIds),
     mapGames: onMap.length,
     mapWins: onMap.filter((x) => x.players.find((p) => clanIds.has(p.profileId)).won).length,
   };
