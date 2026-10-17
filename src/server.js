@@ -5,6 +5,7 @@ import { PLAYERS, PORT, POLL_MINUTES, DATA_FILE } from './config.js';
 import { loadStore } from './store.js';
 import { collect } from './collector.js';
 import { computeStats } from './stats.js';
+import { matchDetail } from './extras.js';
 import { periodStart } from './periods.js';
 
 const PUBLIC_DIR = new URL('../public/', import.meta.url).pathname;
@@ -30,6 +31,13 @@ const server = createServer(async (req, res) => {
   if (api) {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(computeStats(store, PLAYERS, { since: periodStart(api[1]) })));
+  }
+
+  const match = pathname.match(/^\/api\/match\/(\d+)(?:\.json)?$/);
+  if (match) {
+    const detail = matchDetail(store, PLAYERS, match[1]);
+    res.writeHead(detail ? 200 : 404, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify(detail));
   }
 
   if (pathname === '/periods.js') {

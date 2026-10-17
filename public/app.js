@@ -8,6 +8,15 @@ const date = (t) => new Date(t * 1000).toLocaleDateString('no-NO', { day: 'numer
 const time = (t) => new Date(t * 1000).toLocaleString('no-NO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const month = (key) => new Date(`${key}-15`).toLocaleDateString('no-NO', { month: 'short', year: 'numeric' });
 const minutes = (s) => (s ? `${Math.round(s / 60)} min` : '');
+const signed = (n) => (n == null ? '–' : `${n >= 0 ? '+' : '−'}${Math.abs(n)}`);
+const upDown = (n) => (n == null ? '' : `<span class="${n >= 0 ? 'up' : 'down'}">${signed(n)}</span>`);
+const day = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+
+// En flis med tall; med kamp-id blir den en lenke til kampsiden
+function tile(label, value, sub = '', matchId = null) {
+  const inner = `<div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div>`;
+  return matchId ? `<a class="tile" href="#kamp=${matchId}" data-match="${matchId}">${inner}</a>` : `<div class="tile">${inner}</div>`;
+}
 
 let chart = null;
 let eloChart = null;
@@ -74,8 +83,21 @@ function render(stats) {
         <div class="stat">Snittrating motstander <b>${lm.theirRating ?? '–'}</b></div>
         <div class="stat">Forskjell <b>${diff == null ? '–' : `${diff >= 0 ? '+' : '−'}${Math.abs(diff)}`}</b></div>
         <div class="stat">Vi på ${esc(lm.map)} <b>${lm.mapWins} av ${lm.mapGames} seire</b></div>
-      </div>`;
+      </div>
+      <a class="lm-link" href="#kamp=${lm.id}" data-match="${lm.id}">Se hele kampen →</a>`;
   }
+
+  // Uka som gikk (uavhengig av periode)
+  const w = stats.weekly;
+  document.getElementById('weekly-range').textContent =
+    `${date(w.from)} – ${date(w.to)}, alle kamptyper. Følger ikke periodevalget.`;
+  document.getElementById('weekly').innerHTML = w.games ? [
+    tile('Kamper', w.games, `${w.wins} seire · ${pct(w.winRate)}`),
+    tile('Klan-Elo', w.clanElo ?? '–', `${upDown(w.clanEloChange)} denne uka`),
+    w.topPlayer ? tile('Ukens spiller', esc(w.topPlayer.name), `${upDown(w.topPlayer.ratingChange)} lag-RM · ${w.topPlayer.wins} av ${w.topPlayer.games} seire`) : '',
+    w.topMap ? tile('Ukens kart', esc(w.topMap.name), `${w.topMap.wins} av ${w.topMap.games} seire`) : '',
+    w.bestWin ? tile('Ukens beste seier', esc(w.bestWin.map), `mot ${w.bestWin.diff} høyere snittrating`, w.bestWin.id) : '',
+  ].join('') : '<p class="muted small">Ingen kamper de siste 7 dagene.</p>';
 
   // Klan-Elo: følger valgt periode
   const elo = stats.clanElo;
@@ -160,6 +182,27 @@ function render(stats) {
   table(document.getElementById('lineups'), stats.lineups, 'Lag');
   table(document.getElementById('clan-maps'), stats.clanMaps, 'Kart');
 
+  // Civ-par i 4v4
+  const pairs = stats.civPairs4v4;
+  document.getElementById('pairs-note').textContent = pairs.games
+    ? `${pairs.games} rangerte 4v4 der alle fire spilte på samme lag. Bare par dere har spilt minst ${pairs.minGames} ganger.`
+    : 'Ingen rangerte 4v4 med alle fire i perioden.';
+  table(document.getElementById('pairs-best'), pairs.best, 'Civer');
+  table(document.getElementById('pairs-worst'), pairs.worst, 'Civer');
+
+  // Rekordtavle
+  const r = stats.records;
+  document.getElementById('records').innerHTML = [
+    r.upset && tile('Største sjokkseier', `+${r.upset.diff}`, `${esc(r.upset.map)} · ${r.upset.ourRating} mot ${r.upset.theirRating} · ${date(r.upset.start)}`, r.upset.id),
+    r.favLoss && tile('Største tap som favoritt', `−${r.favLoss.diff}`, `${esc(r.favLoss.map)} · ${r.favLoss.ourRating} mot ${r.favLoss.theirRating} · ${date(r.favLoss.start)}`, r.favLoss.id),
+    r.longest && tile('Lengste kamp', minutes(r.longest.duration), `${esc(r.longest.map)} · ${r.longest.won ? 'seier' : 'tap'} · ${date(r.longest.start)}`, r.longest.id),
+    r.shortestWin && tile('Raskeste seier', minutes(r.shortestWin.duration), `${esc(r.shortestWin.map)} · ${date(r.shortestWin.start)}`, r.shortestWin.id),
+    r.bestGain && tile('Største ratinghopp', upDown(r.bestGain.change), `${esc(r.bestGain.name)} · ${esc(r.bestGain.map)} · ${date(r.bestGain.start)}`, r.bestGain.id),
+    r.worstDrop && tile('Største ratingfall', upDown(r.worstDrop.change), `${esc(r.worstDrop.name)} · ${esc(r.worstDrop.map)} · ${date(r.worstDrop.start)}`, r.worstDrop.id),
+    r.busiestDay && tile('Flest kamper på én dag', r.busiestDay.games, `${day(r.busiestDay.day)} · ${r.busiestDay.wins} seire`),
+    ...r.peaks.map((p) => tile(`Høyeste lag-RM, ${esc(p.name)}`, p.rating, date(p.start), p.id)),
+  ].filter(Boolean).join('') || '<p class="muted small">Ingen rangerte lagkamper i perioden.</p>';
+
   // Trender
   const t = stats.trends;
   monthChart?.destroy();
@@ -223,7 +266,7 @@ function render(stats) {
 
   // Siste kamper
   document.getElementById('recent').innerHTML = stats.recent.length ? stats.recent.map((m) => `
-    <div class="match">
+    <a class="match" href="#kamp=${m.id}" data-match="${m.id}">
       <div class="match-head"><b>${esc(m.map)}</b><span>${esc(m.type)}</span><span>${time(m.start)}</span><span>${minutes(m.duration)}</span></div>
       <div class="teams">${m.teams.map((t) => `
         <div class="team ${t.won ? 'won' : 'lost'}">
@@ -235,23 +278,90 @@ function render(stats) {
             </div>`).join('')}
         </div>`).join('')}
       </div>
-    </div>`).join('') : '<p class="muted small">Ingen kamper i perioden.</p>';
+    </a>`).join('') : '<p class="muted small">Ingen kamper i perioden.</p>';
 }
 
 // Periodevelger: husker valget i adressen (#periode=1y), så lenken kan deles
 const picker = document.getElementById('period');
 picker.innerHTML = PERIODS.map((p) => `<button type="button" data-key="${p.key}">${p.label}</button>`).join('');
 
+// Adressen holder både periode og åpen kamp, f.eks. #periode=1y&kamp=514148551
+const hashParams = () => new URLSearchParams(location.hash.slice(1));
+function setHash(changes) {
+  const params = hashParams();
+  for (const [k, v] of Object.entries(changes)) {
+    if (v == null) params.delete(k);
+    else params.set(k, v);
+  }
+  const str = params.toString();
+  history.replaceState(null, '', str ? `#${str}` : location.pathname);
+}
+
 async function show(key) {
   if (!PERIODS.some((p) => p.key === key)) key = 'all';
   for (const b of picker.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.key === key));
-  history.replaceState(null, '', key === 'all' ? location.pathname : `#periode=${key}`);
+  setHash({ periode: key === 'all' ? null : key });
   render(await fetch(`api/stats-${key}.json`).then((r) => r.json()));
 }
+
+// Kampside: åpnes som et vindu over siden
+const dialog = document.getElementById('match-dialog');
+const matchBody = document.getElementById('match-body');
+
+function renderMatch(m) {
+  const rating = (p) => (p.oldRating != null && p.newRating != null
+    ? `${p.oldRating} → ${p.newRating} ${upDown(p.change)}`
+    : (p.newRating ?? p.oldRating ?? '–'));
+  matchBody.innerHTML = `
+    <div class="md-top">
+      <div>
+        <h2 id="match-title">${esc(m.map)}${m.won == null ? '' : ` · <span class="${m.won ? 'up' : 'down'}">${m.won ? 'Seier' : 'Tap'}</span>`}</h2>
+        <p class="muted">${esc(m.type)} · ${time(m.start)}${m.duration ? ` · ${minutes(m.duration)}` : ''}</p>
+      </div>
+      <button type="button" class="md-close" data-close>Lukk</button>
+    </div>
+    <div class="md-teams">${m.teams.map((t, i) => `
+      <div class="md-team ${t.won ? 'won' : 'lost'}">
+        <h3><span>Lag ${i + 1} · ${t.won ? 'Seier' : 'Tap'}</span><span class="muted">snitt ${t.avgRating ?? '–'}</span></h3>
+        <table><tbody>${t.players.map((p) => `
+          <tr class="${p.clan ? 'clan' : ''}">
+            <td>${p.clan ? esc(p.name) : p.profileId ? `<a href="https://www.aoe2insights.com/user/${p.profileId}/" target="_blank" rel="noopener">Motstander</a>` : 'AI'}</td>
+            <td>${esc(p.civ)}</td>
+            <td class="num">${rating(p)}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>`).join('')}
+    </div>
+    ${m.mapGames ? `<p class="muted small">Vi på ${esc(m.map)}: ${m.mapWins} av ${m.mapGames} seire. Motstandere lenker til aoe2insights.</p>` : ''}`;
+}
+
+async function openMatch(id) {
+  setHash({ kamp: id });
+  matchBody.innerHTML = '<p class="muted">Laster kamp …</p>';
+  if (!dialog.open) dialog.showModal();
+  const res = await fetch(`api/match/${id}.json`);
+  const m = res.ok ? await res.json() : null;
+  if (m) renderMatch(m);
+  else matchBody.innerHTML = '<p class="muted">Fant ikke kampen.</p><button type="button" class="md-close" data-close>Lukk</button>';
+}
+
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('[data-match]');
+  if (!link || e.metaKey || e.ctrlKey) return;
+  e.preventDefault();
+  openMatch(link.dataset.match);
+});
+dialog.addEventListener('click', (e) => {
+  // Klikk på bakgrunnen eller Lukk-knappen lukker
+  if (e.target === dialog || e.target.closest('[data-close]')) dialog.close();
+});
+dialog.addEventListener('close', () => setHash({ kamp: null }));
 
 picker.addEventListener('click', (e) => {
   const key = e.target.closest('button')?.dataset.key;
   if (key) show(key);
 });
 
-await show(new URLSearchParams(location.hash.slice(1)).get('periode') ?? 'all');
+const startMatch = hashParams().get('kamp');
+await show(hashParams().get('periode') ?? 'all');
+if (startMatch) openMatch(startMatch);

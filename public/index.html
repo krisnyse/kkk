@@ -87,6 +87,12 @@
 
     <section class="panel last-match" id="last-match" hidden></section>
 
+    <section class="panel weekly">
+      <h2>Uka som gikk</h2>
+      <p class="muted small" id="weekly-range">Siste 7 dager, alle kamptyper. Følger ikke periodevalget.</p>
+      <div class="tiles" id="weekly"></div>
+    </section>
+
     <section class="panel clan-elo">
       <div>
         <h2>Klan-Elo</h2>
@@ -115,6 +121,21 @@
         <p class="muted small">Kamper med minst to av oss på laget.</p>
         <table id="clan-maps"></table>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Beste civ-par i 4v4</h2>
+      <p class="muted small" id="pairs-note">Rangerte 4v4 der alle fire spilte på samme lag.</p>
+      <div class="grid">
+        <div><h4>Best</h4><table id="pairs-best"></table></div>
+        <div><h4>Dårligst</h4><table id="pairs-worst"></table></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Rekordtavle</h2>
+      <p class="muted small">Rangerte lagkamper i perioden. Trykk på en rekord for å se kampen.</p>
+      <div class="tiles" id="records"></div>
     </section>
 
     <section class="panel">
@@ -167,9 +188,14 @@
 
     <section class="panel">
       <h2>Siste kamper</h2>
+      <p class="muted small">Trykk på en kamp for å se detaljer.</p>
       <div id="recent"></div>
     </section>
   </main>
+
+  <dialog id="match-dialog" aria-labelledby="match-title">
+    <div id="match-body"></div>
+  </dialog>
 
   <script src="app.js" type="module"></script>
 </body>
