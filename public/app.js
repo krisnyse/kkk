@@ -5,6 +5,10 @@ const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const pct = (x) => (x == null ? '–' : `${Math.round(x * 100)} %`);
 const date = (t) => new Date(t * 1000).toLocaleDateString('no-NO', { day: 'numeric', month: 'short', year: 'numeric' });
+// Aksetekst: klokkeslett når grafen dekker under to døgn (f.eks. «I dag»), ellers dato
+const axisLabel = (chart, v) => (chart.max - chart.min < 2 * 86400
+  ? new Date(v * 1000).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })
+  : date(v));
 const time = (t) => new Date(t * 1000).toLocaleString('no-NO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const month = (key) => new Date(`${key}-15`).toLocaleDateString('no-NO', { month: 'short', year: 'numeric' });
 const minutes = (s) => (s ? `${Math.round(s / 60)} min` : '');
@@ -182,7 +186,7 @@ function render(stats) {
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         scales: {
-          x: { type: 'linear', min: elo.points[0].t, max: elo.points.at(-1).t, ticks: { callback: (v) => date(v), maxTicksLimit: 5 }, grid: { display: false } },
+          x: { type: 'linear', min: elo.points[0].t, max: elo.points.at(-1).t, ticks: { callback(v) { return axisLabel(this, v); }, maxTicksLimit: 5 }, grid: { display: false } },
           y: { ticks: { maxTicksLimit: 5 } },
         },
         plugins: {
@@ -234,7 +238,7 @@ function render(stats) {
         maintainAspectRatio: false,
         interaction: { mode: 'nearest', intersect: false },
         scales: {
-          x: { type: 'linear', min: stats.since ?? undefined, max: Math.max(...withHistory.map((p) => p.ratingHistory.at(-1).t)), ticks: { callback: (v) => date(v), maxTicksLimit: 5 }, grid: { display: false } },
+          x: { type: 'linear', min: stats.since ?? undefined, max: Math.max(...withHistory.map((p) => p.ratingHistory.at(-1).t)), ticks: { callback(v) { return axisLabel(this, v); }, maxTicksLimit: 5 }, grid: { display: false } },
           y: { ticks: { maxTicksLimit: 6 } },
         },
         plugins: {
@@ -472,7 +476,7 @@ function renderPlayer(id) {
         maintainAspectRatio: false,
         interaction: { mode: 'nearest', intersect: false },
         scales: {
-          x: { type: 'linear', min: p.ratingHistory[0].t, max: p.ratingHistory.at(-1).t, ticks: { callback: (v) => date(v), maxTicksLimit: 5 }, grid: { display: false } },
+          x: { type: 'linear', min: p.ratingHistory[0].t, max: p.ratingHistory.at(-1).t, ticks: { callback(v) { return axisLabel(this, v); }, maxTicksLimit: 5 }, grid: { display: false } },
           y: { ticks: { maxTicksLimit: 5 } },
         },
         plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => time(items[0].parsed.x) } } },

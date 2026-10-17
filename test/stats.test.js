@@ -214,3 +214,20 @@ test('fetchedAt er siste henting, ellers siste oppdatering av data', () => {
   assert.equal(computeStats(store, PLAYERS).fetchedAt, '2026-10-17T18:00:00.000Z');
   assert.equal(computeStats(store, PLAYERS, { fetchedAt: '2026-10-17T19:10:00.000Z' }).fetchedAt, '2026-10-17T19:10:00.000Z');
 });
+
+test('«I dag» starter ved midnatt norsk tid', async () => {
+  const { periodStart } = await import('../src/periods.js');
+  // 17. okt. 2026 er sommertid (UTC+2): midnatt i Oslo er 22:00 UTC dagen før
+  assert.equal(periodStart('today', Date.parse('2026-10-17T21:30:00Z')), Date.parse('2026-10-16T22:00:00Z') / 1000);
+  assert.equal(periodStart('today', Date.parse('2026-10-17T22:30:00Z')), Date.parse('2026-10-17T22:00:00Z') / 1000);
+  // Vintertid (UTC+1)
+  assert.equal(periodStart('today', Date.parse('2026-12-01T12:00:00Z')), Date.parse('2026-11-30T23:00:00Z') / 1000);
+});
+
+test('klan-Elo for «I dag» starter ved midnatt', async () => {
+  const { periodStart } = await import('../src/periods.js');
+  const now = Date.parse('2026-10-17T12:00:00Z');
+  const since = periodStart('today', now);
+  const elo = computeStats(buildStore(), PLAYERS, { since, now }).clanElo;
+  if (elo.points.length) assert.equal(elo.points[0].t, since);
+});

@@ -3,6 +3,7 @@
 import { getPersonalStats, getRecentMatches } from './relic.js';
 import { normalizeMatch, normalizeProfiles } from './normalize.js';
 import { saveStore } from './store.js';
+import { startOfDay } from './periods.js';
 
 export async function collect(store, profileIds, file) {
   const [stats, history] = await Promise.all([getPersonalStats(profileIds), getRecentMatches(profileIds)]);
@@ -18,8 +19,10 @@ export async function collect(store, profileIds, file) {
     store.matches[raw.id] = normalizeMatch(raw);
     added++;
   }
-  // Skriv bare når noe er nytt, så GitHub Actions ikke lager en commit hver halvtime
-  if (added || profilesChanged) {
+  // Skriv bare når noe er nytt, så GitHub Actions ikke lager en commit hver gang.
+  // Unntak: første henting etter midnatt, så «I dag» på nettsiden blir bygget på nytt og ikke viser gårsdagen.
+  const newDay = !store.updatedAt || Date.parse(store.updatedAt) / 1000 < startOfDay();
+  if (added || profilesChanged || newDay) {
     store.updatedAt = new Date().toISOString();
     await saveStore(file, store);
   }
