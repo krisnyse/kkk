@@ -61,7 +61,7 @@ export function normalizeProfiles(raw) {
     const key = LEADERBOARDS[s.leaderboard_id];
     const profile = groups.get(s.statgroup_id);
     if (key && profile) {
-      profile.ratings[key] = { rating: s.rating, wins: s.wins, losses: s.losses, rank: s.rank > 0 ? s.rank : null, streak: s.streak };
+      profile.ratings[key] = { rating: s.rating, wins: s.wins, losses: s.losses, streak: s.streak };
     }
   }
   return Object.fromEntries([...groups.values()].map((p) => [p.profileId, p]));

@@ -16,6 +16,8 @@ Krever Node 22 eller nyere. Ingen avhengigheter å installere.
 ```sh
 npm start          # http://localhost:3000
 npm test
+npm run collect    # hent nye kamper én gang
+npm run build      # lag statisk side i dist/
 ```
 
 Serveren henter nye data ved oppstart og deretter hvert 10. minutt. Kampene lagres i `data/matches.json`.
@@ -28,6 +30,15 @@ Serveren henter nye data ved oppstart og deretter hvert 10. minutt. Kampene lagr
 | `NO_POLL`      | –                     | Sett til `1` for å ikke hente data    |
 
 Spillerne står i `src/config.js`. `profile_id` er tallet i aoe2insights-lenken.
+
+## Publisert på Vercel
+
+Vercel kjører ikke en server som står og går, så nettsiden der er statisk:
+
+1. GitHub Actions (`.github/workflows/collect.yml`) kjører `npm run collect` hver halvtime og committer `data/matches.json` når det har kommet nye kamper.
+2. Hver commit får Vercel til å kjøre `npm run build`, som lager `dist/` med nettsiden og ferdig utregnet `api/stats.json`.
+
+Oppsett én gang: importer repoet i Vercel (Add New → Project → `krisnyse/kkk`). `vercel.json` sier resten. Jobben kan også kjøres for hånd under Actions → «Hent kamper» → Run workflow.
 
 ## Viktig å vite
 
