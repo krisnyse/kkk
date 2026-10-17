@@ -109,3 +109,11 @@ h4 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 
 @media (max-width: 560px) {
   .teams { grid-template-columns: 1fr; }
 }
+
+.last-match { border-left: 4px solid var(--border); }
+.last-match.won { border-left-color: var(--win); }
+.last-match.lost { border-left-color: var(--loss); }
+.lm-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 8px; }
+.lm-result { font-weight: 700; font-size: 20px; }
+.lm-players { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-bottom: 8px; }
+.lm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 4px 16px; }

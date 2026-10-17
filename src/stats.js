@@ -63,6 +63,47 @@ function clanElo(store, players, since, now) {
   };
 }
 
+const avg = (xs) => (xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
+
+// Siste kamp med minst én av oss, uansett valgt periode, med litt statistikk om den
+function lastMatch(store, players, nameOf) {
+  const clanIds = new Set(players.map((p) => p.profileId));
+  const all = Object.values(store.matches)
+    .filter((m) => m.players.some((p) => clanIds.has(p.profileId)))
+    .sort((a, b) => b.start - a.start);
+  const m = all[0];
+  if (!m) return null;
+
+  const ours = m.players.filter((p) => clanIds.has(p.profileId));
+  const side = ours[0].team;
+  const mine = m.players.filter((p) => p.team === side);
+  const theirs = m.players.filter((p) => p.team !== side);
+  const rating = (ps) => avg(ps.map((p) => p.oldRating).filter((r) => r));
+
+  const map = mapName(m.mapFile);
+  const onMap = all.filter((x) => mapName(x.mapFile) === map);
+  const mapWins = onMap.filter((x) => x.players.find((p) => clanIds.has(p.profileId)).won).length;
+
+  return {
+    id: m.id,
+    start: m.start,
+    duration: m.end && m.start ? m.end - m.start : null,
+    map,
+    type: m.typeName ?? matchTypeName(m.matchType),
+    won: ours[0].won,
+    teamSize: mine.length,
+    clanPlayers: ours.map((p) => ({
+      name: nameOf(p.profileId),
+      civ: civLabel(civKey(p)),
+      ratingChange: p.newRating != null && p.oldRating != null ? p.newRating - p.oldRating : null,
+    })),
+    ourRating: rating(mine),
+    theirRating: rating(theirs),
+    mapGames: onMap.length,
+    mapWins,
+  };
+}
+
 // since: unix-sekunder; bare kamper som startet etter dette tas med (null = alle)
 // now: millisekunder; tidspunktet klan-Elo-tidslinjen regnes bakover fra
 export function computeStats(store, players, { since = null, now = Date.now() } = {}) {
@@ -149,5 +190,6 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
     clanCivs: toList(clanCivs, civLabel).slice(0, 12),
     clanMaps: toList(clanMaps).slice(0, 10),
     recent: recent.reverse().slice(0, 25),
+    lastMatch: lastMatch(store, players, nameOf),
   };
 }

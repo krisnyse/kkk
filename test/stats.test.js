@@ -80,3 +80,22 @@ test('klan-Elo er snittet av siste lag-RM-rating per spiller, dag for dag', () =
   assert.equal(all.points[0].rating, 1100);
   assert.equal(all.change, 50);
 });
+
+test('siste kamp har resultat, rating og kartstatistikk', () => {
+  const m = (id, start, won, map = 'Arabia.rms') => ({
+    id, mapFile: map, matchType: 7, start, end: start + 1200,
+    players: [
+      { profileId: 387309, civId: 1, team: 1, won, oldRating: 1200, newRating: won ? 1210 : 1190 },
+      { profileId: 999, civId: 2, team: 2, won: !won, oldRating: 1100, newRating: 1100 },
+    ],
+  });
+  const store = { profiles: {}, matches: { 1: m(1, 1000, true), 2: m(2, 2000, false) } };
+  const lm = computeStats(store, PLAYERS, { now: 3000_000 }).lastMatch;
+  assert.equal(lm.id, 2);
+  assert.equal(lm.won, false);
+  assert.equal(lm.clanPlayers[0].ratingChange, -10);
+  assert.equal(lm.ourRating, 1200);
+  assert.equal(lm.theirRating, 1100);
+  assert.equal(lm.mapGames, 2);
+  assert.equal(lm.mapWins, 1);
+});

@@ -54,6 +54,27 @@ function render(stats) {
       </article>`;
   }).join('');
 
+  // Siste kamp (uavhengig av periode)
+  const lm = stats.lastMatch;
+  const box = document.getElementById('last-match');
+  box.hidden = !lm;
+  if (lm) {
+    const diff = lm.ourRating != null && lm.theirRating != null ? lm.ourRating - lm.theirRating : null;
+    box.className = `panel last-match ${lm.won ? 'won' : 'lost'}`;
+    box.innerHTML = `
+      <h2>Siste kamp</h2>
+      <div class="lm-head"><span class="lm-result">${lm.won ? 'Seier' : 'Tap'}</span>
+        <span>${esc(lm.map)} · ${esc(lm.type)}</span><span class="muted">${time(lm.start)}${lm.duration ? ` · ${minutes(lm.duration)}` : ''}</span></div>
+      <div class="lm-players">${lm.clanPlayers.map((p) => `
+        <div><b>${esc(p.name)}</b> ${esc(p.civ)}${p.ratingChange != null ? ` <span class="${p.ratingChange >= 0 ? 'up' : 'down'}">${p.ratingChange >= 0 ? '+' : '−'}${Math.abs(p.ratingChange)}</span>` : ''}</div>`).join('')}</div>
+      <div class="lm-stats">
+        <div class="stat">Snittrating oss <b>${lm.ourRating ?? '–'}</b></div>
+        <div class="stat">Snittrating motstander <b>${lm.theirRating ?? '–'}</b></div>
+        <div class="stat">Forskjell <b>${diff == null ? '–' : `${diff >= 0 ? '+' : '−'}${Math.abs(diff)}`}</b></div>
+        <div class="stat">Vi på ${esc(lm.map)} <b>${lm.mapWins} av ${lm.mapGames} seire</b></div>
+      </div>`;
+  }
+
   // Klan-Elo: følger valgt periode
   const elo = stats.clanElo;
   document.getElementById('clan-elo-now').textContent = elo?.current ?? '–';
