@@ -67,7 +67,8 @@ function clanElo(store, players, since, now) {
   const step = Math.max(1, Math.ceil(days / MAX_ELO_POINTS));
   const points = [];
   for (let day = days; day >= 0; day -= step) {
-    const t = end - day * DAY;
+    // Første punkt er periodens start, også når perioden ikke er hele døgn (som «I dag»)
+    const t = Math.max(start, end - day * DAY);
     const ratings = [...history.values()].map((h) => h.findLast((x) => x.t <= t)?.rating).filter((r) => r != null);
     if (ratings.length) points.push({ t, rating: Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length), players: ratings.length });
   }
