@@ -22,8 +22,39 @@ function toList(map, label = (k) => k) {
     .sort((a, b) => b.games - a.games || b.winRate - a.winRate);
 }
 
+const DAY = 24 * 60 * 60;
+const CLAN_ELO_DAYS = 30;
+
+// Felles klan-Elo: snittet av lag-RM-ratingen til spillerne, ett punkt per døgn de siste 30 dagene.
+// Hver spiller teller med siste rating de hadde ved punktet, så dager uten kamper beholder forrige verdi.
+// Bruker alle lagrede kamper uansett valgt periode, ellers ville ratingen før perioden manglet.
+function clanElo(store, players, now) {
+  const clanIds = new Set(players.map((p) => p.profileId));
+  const history = new Map(players.map((p) => [p.profileId, []]));
+  for (const m of Object.values(store.matches).sort((a, b) => a.start - b.start)) {
+    if (!TEAM_RM.has(m.matchType)) continue;
+    for (const p of m.players) {
+      if (clanIds.has(p.profileId) && p.newRating) history.get(p.profileId).push({ t: m.start, rating: p.newRating });
+    }
+  }
+
+  const end = Math.floor(now / 1000);
+  const points = [];
+  for (let day = CLAN_ELO_DAYS; day >= 0; day--) {
+    const t = end - day * DAY;
+    const ratings = [...history.values()].map((h) => h.findLast((x) => x.t <= t)?.rating).filter((r) => r != null);
+    if (ratings.length) points.push({ t, rating: Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length), players: ratings.length });
+  }
+  return {
+    current: points.at(-1)?.rating ?? null,
+    change: points.length ? points.at(-1).rating - points[0].rating : null,
+    points,
+  };
+}
+
 // since: unix-sekunder; bare kamper som startet etter dette tas med (null = alle)
-export function computeStats(store, players, { since = null } = {}) {
+// now: millisekunder; tidspunktet klan-Elo-tidslinjen regnes bakover fra
+export function computeStats(store, players, { since = null, now = Date.now() } = {}) {
   const clanIds = new Set(players.map((p) => p.profileId));
   const nameOf = (id) => store.profiles[id]?.name ?? players.find((p) => p.profileId === id)?.name ?? String(id);
   const matches = Object.values(store.matches)
@@ -85,6 +116,7 @@ export function computeStats(store, players, { since = null } = {}) {
     updatedAt: store.updatedAt,
     since,
     totalMatches: recent.length,
+    clanElo: clanElo(store, players, now),
     players: players.map(({ profileId }) => {
       const s = perPlayer.get(profileId);
       const profile = store.profiles[profileId] ?? {};

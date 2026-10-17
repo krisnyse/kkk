@@ -9,6 +9,7 @@ const time = (t) => new Date(t * 1000).toLocaleString('no-NO', { day: 'numeric',
 const minutes = (s) => (s ? `${Math.round(s / 60)} min` : '');
 
 let chart = null;
+let eloChart = null;
 let colorOf = new Map();
 
 function table(el, rows, nameHeader) {
@@ -53,12 +54,54 @@ function render(stats) {
       </article>`;
   }).join('');
 
+  // Klan-Elo: samme 30 dager uansett periode
+  const elo = stats.clanElo;
+  document.getElementById('clan-elo-now').textContent = elo?.current ?? '–';
+  const change = document.getElementById('clan-elo-change');
+  change.innerHTML = elo?.change != null
+    ? `<span class="${elo.change >= 0 ? 'up' : 'down'}">${elo.change >= 0 ? '+' : '−'}${Math.abs(elo.change)}</span> siste 30 dager`
+    : '';
+  eloChart?.destroy();
+  eloChart = null;
+  document.getElementById('clan-elo-wrap').hidden = !elo?.points.length;
+  if (elo?.points.length) {
+    Chart.defaults.color = css('--text-2');
+    Chart.defaults.borderColor = css('--border');
+    eloChart = new Chart(document.getElementById('clan-elo-chart'), {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Klan-Elo',
+          data: elo.points.map((p) => ({ x: p.t, y: p.rating })),
+          borderColor: css('--text'),
+          backgroundColor: css('--text'),
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          tension: 0,
+        }],
+      },
+      options: {
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { type: 'linear', min: elo.points[0].t, max: elo.points.at(-1).t, ticks: { callback: (v) => date(v), maxTicksLimit: 5 }, grid: { display: false } },
+          y: { ticks: { maxTicksLimit: 5 } },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: (items) => date(items[0].parsed.x) } },
+        },
+      },
+    });
+  }
+
   // Ratinggraf
   const withHistory = stats.players.filter((p) => p.ratingHistory.length);
   chart?.destroy();
   chart = null;
   document.getElementById('rating-empty').hidden = withHistory.length > 0;
-  document.querySelector('.chart-wrap').hidden = !withHistory.length;
+  document.getElementById('rating-wrap').hidden = !withHistory.length;
   if (withHistory.length) {
     Chart.defaults.color = css('--text-2');
     Chart.defaults.borderColor = css('--border');

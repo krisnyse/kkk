@@ -17,10 +17,20 @@
   <main>
     <section class="cards" id="players"></section>
 
+    <section class="panel clan-elo">
+      <div>
+        <h2>Klan-Elo</h2>
+        <p class="muted small">Snittet av lag-RM-ratingen til alle fire, siste 30 dager. Følger ikke periodevalget.</p>
+        <div class="elo-now" id="clan-elo-now">–</div>
+        <div class="muted" id="clan-elo-change"></div>
+      </div>
+      <div class="chart-wrap small-chart" id="clan-elo-wrap"><canvas id="clan-elo-chart" aria-label="Klan-Elo siste 30 dager"></canvas></div>
+    </section>
+
     <section class="panel">
       <h2>Lagrating over tid</h2>
       <p class="muted small">Ny rating etter hver rangert lagkamp (RM 2v2–4v4).</p>
-      <div class="chart-wrap"><canvas id="rating-chart" aria-label="Lagrating over tid per spiller"></canvas></div>
+      <div class="chart-wrap" id="rating-wrap"><canvas id="rating-chart" aria-label="Lagrating over tid per spiller"></canvas></div>
       <p class="muted small" id="rating-empty" hidden>Ingen rangerte lagkamper i perioden.</p>
     </section>
 
