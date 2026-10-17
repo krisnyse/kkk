@@ -7,6 +7,7 @@ const PER_PAGE = 300;
 const civIdByName = new Map(Object.entries(CIVS).map(([id, name]) => [name.toLowerCase(), Number(id)]));
 civIdByName.set('mayans', civIdByName.get('maya'));
 civIdByName.set('indians', civIdByName.get('hindustanis'));
+civIdByName.set('inca', civIdByName.get('incas'));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
