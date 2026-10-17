@@ -156,3 +156,10 @@ dialog#match-dialog::backdrop { background: rgb(0 0 0 / .45); }
 .md-team tr.clan td:first-child { font-weight: 600; }
 .md-team a { color: var(--text-2); }
 @media (max-width: 560px) { .md-teams { grid-template-columns: 1fr; } }
+
+.expected { display: inline-flex; gap: 4px; align-items: baseline; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); font-size: 12px; white-space: nowrap; }
+.expected b { color: var(--text); }
+.expected.up { border-color: var(--win); color: var(--win); }
+.expected.down { border-color: var(--loss); color: var(--loss); }
+.match-head .expected { margin-left: auto; }
+.md-expected { margin: 8px 0 0; color: var(--text-2); font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

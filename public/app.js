@@ -12,6 +12,14 @@ const signed = (n) => (n == null ? '–' : `${n >= 0 ? '+' : '−'}${Math.abs(n)
 const upDown = (n) => (n == null ? '' : `<span class="${n >= 0 ? 'up' : 'down'}">${signed(n)}</span>`);
 const day = (d) => new Date(`${d}T12:00:00`).toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
 
+// «Burde vunnet»-score 0–10 ut fra Elo, som et lite merke
+const VERDICT_CLASS = { 'Sjokkseier': 'up', 'Seier som underdog': 'up', 'Burde vunnet': 'down', 'Tap som favoritt': 'down' };
+function expectedBadge(e) {
+  if (!e) return '';
+  const title = `Vinnersjanse ${Math.round(e.winChance * 100)} % ut fra snittrating ${e.ourRating} mot ${e.theirRating}`;
+  return `<span class="expected ${VERDICT_CLASS[e.verdict] ?? ''}" title="${title}"><b>${e.score}/10</b> ${e.verdict}</span>`;
+}
+
 // En flis med tall; med kamp-id blir den en lenke til kampsiden
 function tile(label, value, sub = '', matchId = null) {
   const inner = `<div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div>`;
@@ -239,7 +247,7 @@ function render(stats) {
     `Hvor ofte vi vinner mot hver civ på motstanderlaget. Bare civer vi har møtt minst ${t.enemyCivs.minGames} ganger.`;
   table(document.getElementById('enemy-worst'), t.enemyCivs.worst, 'Civ');
   table(document.getElementById('enemy-best'), t.enemyCivs.best, 'Civ');
-  table(document.getElementById('rating-diff'), t.byRatingDiff, 'Vår rating');
+  table(document.getElementById('rating-diff'), t.byRatingDiff, 'Vi var');
   table(document.getElementById('lengths'), t.byLength, 'Lengde');
   table(document.getElementById('weekdays'), t.byWeekday, 'Dag');
   table(document.getElementById('hours'), t.byHour, 'Tid');
@@ -267,7 +275,7 @@ function render(stats) {
   // Siste kamper
   document.getElementById('recent').innerHTML = stats.recent.length ? stats.recent.map((m) => `
     <a class="match" href="#kamp=${m.id}" data-match="${m.id}">
-      <div class="match-head"><b>${esc(m.map)}</b><span>${esc(m.type)}</span><span>${time(m.start)}</span><span>${minutes(m.duration)}</span></div>
+      <div class="match-head"><b>${esc(m.map)}</b><span>${esc(m.type)}</span><span>${time(m.start)}</span><span>${minutes(m.duration)}</span>${expectedBadge(m.expected)}</div>
       <div class="teams">${m.teams.map((t) => `
         <div class="team ${t.won ? 'won' : 'lost'}">
           <div class="result">${t.won ? 'Seier' : 'Tap'}</div>
@@ -317,6 +325,7 @@ function renderMatch(m) {
       <div>
         <h2 id="match-title">${esc(m.map)}${m.won == null ? '' : ` · <span class="${m.won ? 'up' : 'down'}">${m.won ? 'Seier' : 'Tap'}</span>`}</h2>
         <p class="muted">${esc(m.type)} · ${time(m.start)}${m.duration ? ` · ${minutes(m.duration)}` : ''}</p>
+        ${m.expected ? `<p class="md-expected">${expectedBadge(m.expected)} Vinnersjanse før kampen: ${Math.round(m.expected.winChance * 100)} % (snitt ${m.expected.ourRating} mot ${m.expected.theirRating})</p>` : ''}
       </div>
       <button type="button" class="md-close" data-close>Lukk</button>
     </div>

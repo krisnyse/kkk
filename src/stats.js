@@ -1,7 +1,7 @@
 // Regner ut all statistikken siden viser, fra lagrede kamper.
 import { civName } from './civs.js';
 import { mapName, matchTypeName } from './normalize.js';
-import { civPairs4v4, records, weekly } from './extras.js';
+import { civPairs4v4, expectedScore, records, weekly } from './extras.js';
 
 const TEAM_RM = new Set([7, 8, 9]);
 
@@ -33,7 +33,7 @@ const WEEKDAY_INDEX = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }
 
 // Bøtter i fast rekkefølge; hver har en øvre grense (eksklusiv) og et navn
 const LENGTH_BUCKETS = [[25, 'Under 25 min'], [35, '25–35 min'], [45, '35–45 min'], [Infinity, 'Over 45 min']];
-const RATING_DIFF_BUCKETS = [[-100, 'Over 100 lavere'], [-25, '25–100 lavere'], [25, 'Omtrent lik'], [100, '25–100 høyere'], [Infinity, 'Over 100 høyere']];
+const RATING_DIFF_BUCKETS = [[-100, 'Underdog, 100+ lavere'], [-25, 'Underdog, 25–100 lavere'], [25, 'Omtrent likt'], [100, 'Favoritt, 25–100 høyere'], [Infinity, 'Favoritt, 100+ høyere']];
 const HOUR_BUCKETS = [[18, 'Før kl. 18'], [21, 'Kl. 18–21'], [24, 'Kl. 21–24']];
 const bucketOf = (buckets, x) => buckets.find(([max]) => x < max)[1];
 
@@ -205,6 +205,7 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
       duration: m.end && m.start ? m.end - m.start : null,
       map: mapName(m.mapFile),
       type: m.typeName ?? matchTypeName(m.matchType),
+      expected: expectedScore(m, clanIds),
       teams: [...Map.groupBy(m.players, (p) => p.team).entries()]
         .sort(([a], [b]) => a - b)
         .map(([, ps]) => ({
