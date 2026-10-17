@@ -134,7 +134,8 @@ function enemyCivsList(map) {
 
 // since: unix-sekunder; bare kamper som startet etter dette tas med (null = alle)
 // now: millisekunder; tidspunktet klan-Elo-tidslinjen regnes bakover fra
-export function computeStats(store, players, { since = null, now = Date.now() } = {}) {
+// fetchedAt er når data sist ble hentet. Serveren vet det; den statiske versjonen bruker siste henting med nye kamper.
+export function computeStats(store, players, { since = null, now = Date.now(), fetchedAt = store.updatedAt } = {}) {
   const clanIds = new Set(players.map((p) => p.profileId));
   const nameOf = (id) => store.profiles[id]?.name ?? players.find((p) => p.profileId === id)?.name ?? String(id);
   const matches = Object.values(store.matches)
@@ -223,6 +224,7 @@ export function computeStats(store, players, { since = null, now = Date.now() } 
 
   return {
     updatedAt: store.updatedAt,
+    fetchedAt: fetchedAt ?? null,
     since,
     totalMatches: recent.length,
     clanElo: clanElo(store, players, since, now),

@@ -13,10 +13,12 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 
 const store = await loadStore(DATA_FILE);
 const ids = PLAYERS.map((p) => p.profileId);
+let fetchedAt = store.updatedAt;
 
 async function poll() {
   try {
     const added = await collect(store, ids, DATA_FILE);
+    fetchedAt = new Date().toISOString();
     console.log(`[${new Date().toISOString()}] Hentet data, ${added} nye kamper (totalt ${Object.keys(store.matches).length})`);
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Klarte ikke å hente data:`, err.message);
@@ -30,7 +32,7 @@ const server = createServer(async (req, res) => {
   const api = pathname.match(/^\/api\/stats(?:-(\w+))?(?:\.json)?$/);
   if (api) {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify(computeStats(store, PLAYERS, { since: periodStart(api[1]) })));
+    return res.end(JSON.stringify(computeStats(store, PLAYERS, { since: periodStart(api[1]), fetchedAt })));
   }
 
   const match = pathname.match(/^\/api\/match\/(\d+)(?:\.json)?$/);
