@@ -29,6 +29,8 @@ function tile(label, value, sub = '', matchId = null) {
 let chart = null;
 let eloChart = null;
 let monthChart = null;
+let playerChart = null;
+let current = null;
 let colorOf = new Map();
 
 function table(el, rows, nameHeader) {
@@ -50,6 +52,7 @@ function table(el, rows, nameHeader) {
 }
 
 function render(stats) {
+  current = stats;
   // Fargen følger spilleren, uansett periode
   colorOf = new Map(stats.players.map((p, i) => [p.profileId, SERIES[i]]));
 
@@ -63,8 +66,8 @@ function render(stats) {
     const team = p.ratings.rmTeam;
     const solo = p.ratings.rm1v1;
     return `
-      <article class="card" style="--c: var(${colorOf.get(p.profileId)})">
-        <h3>${esc(p.name)}</h3>
+      <article class="card" style="--c: var(${colorOf.get(p.profileId)})" data-player-link="${p.profileId}" tabindex="0" role="link" aria-label="Statistikk for ${esc(p.name)}">
+        <h3>${esc(p.name)}${p.nick && p.nick !== p.name ? ` <span class="nick">«${esc(p.nick)}»</span>` : ''}</h3>
         <div class="stat">Lag-RM <b>${team?.rating ?? '–'}</b></div>
         <div class="stat">Lag W/L <b>${team ? `${team.wins}/${team.losses}` : '–'}</b></div>
         <div class="stat">1v1-RM <b>${solo?.rating ?? '–'}</b></div>
@@ -310,6 +313,7 @@ async function show(key) {
   for (const b of picker.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.key === key));
   setHash({ periode: key === 'all' ? null : key });
   render(await fetch(`api/stats-${key}.json`).then((r) => r.json()));
+  if (playerDialog?.open) renderPlayer(hashParams().get('spiller'));
 }
 
 // Kampside: åpnes som et vindu over siden
@@ -371,6 +375,100 @@ picker.addEventListener('click', (e) => {
   if (key) show(key);
 });
 
+// Spillerside: åpnes fra figurene i logoen eller spillerkortene, og følger valgt periode
+const playerDialog = document.getElementById('player-dialog');
+
+function renderPlayer(id) {
+  const p = current?.players.find((x) => x.profileId === Number(id));
+  if (!p) return false;
+  const color = colorOf.get(p.profileId);
+  playerDialog.style.setProperty('--c', `var(${color})`);
+  const team = p.ratings.rmTeam;
+  const solo = p.ratings.rm1v1;
+  const period = PERIODS.find((x) => x.key === (hashParams().get('periode') ?? 'all'))?.label ?? '';
+  const streak = p.streaks.current > 0 ? `${p.streaks.current} seire` : p.streaks.current < 0 ? `${-p.streaks.current} tap` : '–';
+  document.getElementById('player-body').innerHTML = `
+    <div class="md-top">
+      <div>
+        <h2 id="player-title">${esc(p.nick ?? p.name)}${p.nick && p.nick !== p.name ? ` <span class="nick">${esc(p.name)}</span>` : ''}</h2>
+        <p class="muted">Periode: ${esc(period)} · <a href="https://www.aoe2insights.com/user/${p.profileId}/" target="_blank" rel="noopener">aoe2insights</a></p>
+      </div>
+      <button type="button" class="md-close" data-close>Lukk</button>
+    </div>
+    <div class="pl-stats">
+      ${tile('Lag-RM nå', team?.rating ?? '–', team ? `${team.wins} seire / ${team.losses} tap` : '')}
+      ${tile('1v1-RM nå', solo?.rating ?? '–', solo ? `${solo.wins} seire / ${solo.losses} tap` : '')}
+      ${tile('Kamper i perioden', p.games, `${p.wins} seire · ${pct(p.winRate)}`)}
+      ${tile('På rad nå', streak, `rekord ${p.streaks.bestWin} seire / ${p.streaks.bestLoss} tap`)}
+    </div>`;
+
+  playerChart?.destroy();
+  playerChart = null;
+  document.getElementById('player-chart-wrap').hidden = !p.ratingHistory.length;
+  if (p.ratingHistory.length) {
+    playerChart = new Chart(document.getElementById('player-chart'), {
+      type: 'line',
+      data: { datasets: [{
+        label: 'Lag-RM',
+        data: p.ratingHistory.map((h) => ({ x: h.t, y: h.rating })),
+        borderColor: css(color), backgroundColor: css(color), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0,
+      }] },
+      options: {
+        maintainAspectRatio: false,
+        interaction: { mode: 'nearest', intersect: false },
+        scales: {
+          x: { type: 'linear', min: p.ratingHistory[0].t, max: p.ratingHistory.at(-1).t, ticks: { callback: (v) => date(v), maxTicksLimit: 5 }, grid: { display: false } },
+          y: { ticks: { maxTicksLimit: 5 } },
+        },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: (items) => time(items[0].parsed.x) } } },
+      },
+    });
+  }
+
+  // Lagkamerater: kamper der denne spilleren og én til av oss var på samme lag
+  const mates = current.lineups
+    .filter((l) => l.size === 2 && l.key.split(',').map(Number).includes(p.profileId))
+    .map((l) => ({ ...l, name: current.players.find((x) => x.profileId === Number(l.key.split(',').find((k) => Number(k) !== p.profileId)))?.name ?? l.name }));
+  const tables = document.getElementById('player-tables');
+  tables.innerHTML = `
+    <div class="grid">
+      <div><h4>Civer</h4><table data-pl="civs"></table></div>
+      <div><h4>Kart</h4><table data-pl="maps"></table></div>
+    </div>
+    <h4>Med hver lagkamerat (bare dere to av klanen på laget)</h4><table data-pl="mates"></table>`;
+  table(tables.querySelector('[data-pl="civs"]'), p.civs, 'Civ');
+  table(tables.querySelector('[data-pl="maps"]'), p.maps, 'Kart');
+  table(tables.querySelector('[data-pl="mates"]'), mates, 'Sammen med');
+  return true;
+}
+
+function openPlayer(id) {
+  if (!renderPlayer(id)) return;
+  setHash({ spiller: id });
+  if (dialog.open) dialog.close();
+  if (!playerDialog.open) playerDialog.showModal();
+}
+
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('[data-player-link]');
+  if (!link || e.metaKey || e.ctrlKey) return;
+  e.preventDefault();
+  openPlayer(link.dataset.playerLink);
+});
+document.addEventListener('keydown', (e) => {
+  const card = e.target.closest?.('.card[data-player-link]');
+  if (card && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    openPlayer(card.dataset.playerLink);
+  }
+});
+playerDialog.addEventListener('click', (e) => {
+  if (e.target === playerDialog || e.target.closest('[data-close]')) playerDialog.close();
+});
+playerDialog.addEventListener('close', () => setHash({ spiller: null }));
+
 const startMatch = hashParams().get('kamp');
+const startPlayer = hashParams().get('spiller');
 await show(hashParams().get('periode') ?? 'all');
 if (startMatch) openMatch(startMatch);
+else if (startPlayer) openPlayer(startPlayer);

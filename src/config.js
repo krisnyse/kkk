@@ -1,9 +1,10 @@
-// Klanmedlemmene. profile_id er det samme tallet som står i aoe2insights-lenken.
+// Klanmedlemmene. profile_id er det samme tallet som står i aoe2insights-lenken; nick er kallenavnet i klanen.
+// Rekkefølgen bestemmer fargen (series-1 til -4), også på figurene i logoen.
 export const PLAYERS = [
-  { profileId: 387309, name: 'OnklG' },
-  { profileId: 385760, name: 'DataPaven' },
-  { profileId: 384880, name: 'Tom Lobby' },
-  { profileId: 384303, name: 'Kåre Gullballen' },
+  { profileId: 387309, name: 'OnklG', nick: 'OnklG' },
+  { profileId: 385760, name: 'DataPaven', nick: 'Paven' },
+  { profileId: 384880, name: 'Tom Lobby', nick: 'Sjefen' },
+  { profileId: 384303, name: 'Kåre Gullballen', nick: 'Ferdi' },
 ];
 
 export const PORT = Number(process.env.PORT ?? 3000);
