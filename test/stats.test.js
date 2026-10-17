@@ -112,3 +112,54 @@ test('trender: rekker, ratingforskjell og fiende-civer', () => {
   assert.ok(t.byMonth.every((m, i) => i === 0 || t.byMonth[i - 1].key < m.key));
   assert.ok(t.enemyCivs.worst.every((c) => c.games >= t.enemyCivs.minGames));
 });
+
+test('civ-par i 4v4, rekorder, ukesoppsummering og kampside', async () => {
+  const { civPairs4v4, records, weekly, matchDetail } = await import('../src/extras.js');
+  const ids = PLAYERS.map((p) => p.profileId);
+  const p = (profileId, team, won, civId, oldRating, newRating) => ({ profileId, team, won, civId, oldRating, newRating });
+  const now = Date.parse('2026-10-17T12:00:00Z');
+  const t = (daysAgo) => now / 1000 - daysAgo * 86400;
+  const four = (id, start, won, civs, ours, theirs) => ({
+    id, mapFile: 'Arabia.rms', matchType: 9, start, end: start + 30 * 60,
+    players: [
+      ...ids.map((pid, i) => p(pid, 1, won, civs[i], ours, ours + (won ? 10 : -10))),
+      ...[11, 12, 13, 14].map((pid) => p(pid, 2, !won, 5, theirs, theirs)),
+    ],
+  });
+  const store = {
+    profiles: {},
+    matches: {
+      1: four(1, t(20), true, [1, 2, 3, 4], 1000, 1150),
+      2: four(2, t(10), true, [1, 2, 5, 6], 1100, 1000),
+      3: four(3, t(2), false, [1, 2, 3, 4], 1200, 1100),
+    },
+  };
+  const matches = Object.values(store.matches);
+  const clanIds = new Set(ids);
+
+  const pairs = civPairs4v4(matches, clanIds);
+  assert.equal(pairs.games, 3);
+  // Civ 1 og 2 var med i alle tre kampene, og vant to
+  const both = [...pairs.best, ...pairs.worst].find((x) => x.games === 3);
+  assert.deepEqual({ games: both.games, wins: both.wins }, { games: 3, wins: 2 });
+
+  const r = records(matches, clanIds, String);
+  assert.equal(r.upset.id, 1);
+  assert.equal(r.upset.diff, 150);
+  assert.equal(r.favLoss.id, 3);
+  assert.equal(r.bestGain.change, 10);
+  assert.equal(r.peaks.length, 4);
+
+  const w = weekly(store, PLAYERS, now);
+  assert.equal(w.games, 1);
+  assert.equal(w.wins, 0);
+  // Klan-Elo går fra 1110 (etter kamp 2) til 1190 (etter kamp 3)
+  assert.equal(w.clanEloChange, 80);
+
+  const d = matchDetail(store, PLAYERS, '3');
+  assert.equal(d.won, false);
+  assert.equal(d.teams.length, 2);
+  assert.equal(d.teams[0].avgRating, 1200);
+  assert.equal(d.mapGames, 3);
+  assert.equal(matchDetail(store, PLAYERS, '999'), null);
+});

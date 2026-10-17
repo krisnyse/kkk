@@ -3,6 +3,7 @@ import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { PLAYERS, DATA_FILE } from '../src/config.js';
 import { loadStore } from '../src/store.js';
 import { computeStats } from '../src/stats.js';
+import { matchDetail } from '../src/extras.js';
 import { PERIODS, periodStart } from '../src/periods.js';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
@@ -23,3 +24,9 @@ for (const { key } of PERIODS) {
     console.log(`Bygget dist/ med ${stats.totalMatches} kamper`);
   }
 }
+
+// Én fil per kamp til kampsiden
+await mkdir(`${DIST}api/match`, { recursive: true });
+const ids = Object.keys(store.matches);
+for (const id of ids) await writeFile(`${DIST}api/match/${id}.json`, JSON.stringify(matchDetail(store, PLAYERS, id)));
+console.log(`Bygget ${ids.length} kampsider`);
