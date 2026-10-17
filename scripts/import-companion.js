@@ -41,10 +41,11 @@ let civFixed = 0;
 for (const [id, m] of raw) {
   const existing = store.matches[id];
   if (existing) {
+    // AI-spillere har profileId -1 og kan ikke skilles fra hverandre, så de hoppes over.
     // Relic bruker en eldre civ-nummerering i kamper fra 2020–2022; aoe2companion har riktig civ
     for (const c of normalizeCompanionMatch(m, { ratingIsBefore }).players) {
       const p = existing.players.find((x) => x.profileId === c.profileId);
-      if (p && c.civId != null && p.civId !== c.civId) {
+      if (p && c.profileId > 0 && c.civId != null && p.civId !== c.civId) {
         p.civId = c.civId;
         civFixed++;
       }
