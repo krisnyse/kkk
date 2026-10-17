@@ -6,10 +6,12 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(
 const pct = (x) => (x == null ? '–' : `${Math.round(x * 100)} %`);
 const date = (t) => new Date(t * 1000).toLocaleDateString('no-NO', { day: 'numeric', month: 'short', year: 'numeric' });
 const time = (t) => new Date(t * 1000).toLocaleString('no-NO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const month = (key) => new Date(`${key}-15`).toLocaleDateString('no-NO', { month: 'short', year: 'numeric' });
 const minutes = (s) => (s ? `${Math.round(s / 60)} min` : '');
 
 let chart = null;
 let eloChart = null;
+let monthChart = null;
 let colorOf = new Map();
 
 function table(el, rows, nameHeader) {
@@ -157,6 +159,59 @@ function render(stats) {
 
   table(document.getElementById('lineups'), stats.lineups, 'Lag');
   table(document.getElementById('clan-maps'), stats.clanMaps, 'Kart');
+
+  // Trender
+  const t = stats.trends;
+  monthChart?.destroy();
+  monthChart = null;
+  document.getElementById('month-empty').hidden = t.byMonth.length > 0;
+  document.getElementById('month-wrap').hidden = !t.byMonth.length;
+  if (t.byMonth.length) {
+    monthChart = new Chart(document.getElementById('month-chart'), {
+      type: 'bar',
+      data: {
+        labels: t.byMonth.map((m) => month(m.key)),
+        datasets: [{
+          label: 'Winrate',
+          data: t.byMonth.map((m) => m.winRate * 100),
+          backgroundColor: t.byMonth.map((m) => css(m.winRate >= 0.5 ? '--win' : '--loss')),
+          borderRadius: 2,
+        }],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { display: false }, ticks: { maxTicksLimit: 12, autoSkip: true } },
+          y: { suggestedMin: 30, suggestedMax: 70, ticks: { callback: (v) => `${v} %`, maxTicksLimit: 5 } },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (item) => `${Math.round(item.parsed.y)} % av ${t.byMonth[item.dataIndex].games} kamper` } },
+        },
+      },
+    });
+  }
+
+  document.getElementById('enemy-note').textContent =
+    `Hvor ofte vi vinner mot hver civ på motstanderlaget. Bare civer vi har møtt minst ${t.enemyCivs.minGames} ganger.`;
+  table(document.getElementById('enemy-worst'), t.enemyCivs.worst, 'Civ');
+  table(document.getElementById('enemy-best'), t.enemyCivs.best, 'Civ');
+  table(document.getElementById('rating-diff'), t.byRatingDiff, 'Vår rating');
+  table(document.getElementById('lengths'), t.byLength, 'Lengde');
+  table(document.getElementById('weekdays'), t.byWeekday, 'Dag');
+  table(document.getElementById('hours'), t.byHour, 'Tid');
+
+  const streak = (n) => (n > 0 ? `<span class="up">${n} S</span>` : n < 0 ? `<span class="down">${-n} T</span>` : '–');
+  document.getElementById('streaks').innerHTML = `
+    <thead><tr><th>Spiller</th><th class="num">Flest seire</th><th class="num">Flest tap</th><th class="num">Nå</th></tr></thead>
+    <tbody>${stats.players.map((p) => `
+      <tr>
+        <td><span class="dot inline" style="--c: var(${colorOf.get(p.profileId)})"></span>${esc(p.name)}</td>
+        <td class="num">${p.streaks.bestWin}</td>
+        <td class="num">${p.streaks.bestLoss}</td>
+        <td class="num">${streak(p.streaks.current)}</td>
+      </tr>`).join('')}
+    </tbody>`;
 
   // Civer per spiller
   document.getElementById('player-civs').innerHTML = stats.players.map((p) => `

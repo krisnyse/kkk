@@ -85,11 +85,14 @@ section.grid { margin-bottom: 16px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--border); }
 th { color: var(--muted); font-weight: 500; font-size: 13px; }
-td.num, th.num { text-align: right; }
+td.num, th.num { text-align: right; white-space: nowrap; }
 .bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--text-2); opacity: .5; vertical-align: middle; margin-right: 6px; }
 
 h4 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.dot.inline { display: inline-block; margin-right: 8px; }
+.month-chart { height: 240px; }
+table.spaced { margin-top: 16px; }
 
 .match { border-bottom: 1px solid var(--border); padding: 10px 0; }
 .match:last-child { border-bottom: 0; }

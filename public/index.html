@@ -118,6 +118,49 @@
     </section>
 
     <section class="panel">
+      <h2>Winrate per måned</h2>
+      <p class="muted small">Rangerte lagkamper (RM 2v2–4v4). Grønn søyle betyr minst 50 % seire.</p>
+      <div class="chart-wrap month-chart" id="month-wrap"><canvas id="month-chart" aria-label="Winrate per måned"></canvas></div>
+      <p class="muted small" id="month-empty" hidden>Ingen rangerte lagkamper i perioden.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Fiende-civer</h2>
+      <p class="muted small" id="enemy-note">Hvor ofte vi vinner mot hver civ på motstanderlaget.</p>
+      <div class="grid">
+        <div><h4>Vanskeligst</h4><table id="enemy-worst"></table></div>
+        <div><h4>Lettest</h4><table id="enemy-best"></table></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Favoritt eller underdog</h2>
+        <p class="muted small">Lagets snittrating mot motstandernes, før kampen.</p>
+        <table id="rating-diff"></table>
+      </div>
+      <div class="panel">
+        <h2>Kamplengde</h2>
+        <p class="muted small">Rangerte lagkamper etter hvor lenge de varte.</p>
+        <table id="lengths"></table>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Rekker</h2>
+        <p class="muted small">Flest seire og tap på rad i perioden, alle kamptyper. «Nå» er rekken de står i nå (S = seire, T = tap).</p>
+        <table id="streaks"></table>
+      </div>
+      <div class="panel">
+        <h2>Når dere spiller</h2>
+        <p class="muted small">Rangerte lagkamper, norsk tid.</p>
+        <table id="weekdays"></table>
+        <table id="hours" class="spaced"></table>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Civer per spiller</h2>
       <div class="grid" id="player-civs"></div>
     </section>

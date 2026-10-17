@@ -99,3 +99,16 @@ test('siste kamp har resultat, rating og kartstatistikk', () => {
   assert.equal(lm.mapGames, 2);
   assert.equal(lm.mapWins, 1);
 });
+
+test('trender: rekker, ratingforskjell og fiende-civer', () => {
+  const s = computeStats(buildStore(), PLAYERS);
+  const onklg = s.players.find((p) => p.profileId === 387309);
+  assert.equal(onklg.streaks.bestWin + onklg.streaks.bestLoss > 0, true);
+  const t = s.trends;
+  const games = (rows) => rows.reduce((n, r) => n + r.games, 0);
+  // Hver rangert lagkamp havner i nøyaktig én måned, én ukedag og ett tidsrom
+  assert.equal(games(t.byMonth), games(t.byWeekday));
+  assert.equal(games(t.byWeekday), games(t.byHour));
+  assert.ok(t.byMonth.every((m, i) => i === 0 || t.byMonth[i - 1].key < m.key));
+  assert.ok(t.enemyCivs.worst.every((c) => c.games >= t.enemyCivs.minGames));
+});
