@@ -37,8 +37,20 @@ if (check.before + check.after === 0) console.warn('Ingen overlapp å sjekke rat
 
 let added = 0;
 let skipped = 0;
+let civFixed = 0;
 for (const [id, m] of raw) {
-  if (store.matches[id]) continue;
+  const existing = store.matches[id];
+  if (existing) {
+    // Relic bruker en eldre civ-nummerering i kamper fra 2020–2022; aoe2companion har riktig civ
+    for (const c of normalizeCompanionMatch(m, { ratingIsBefore }).players) {
+      const p = existing.players.find((x) => x.profileId === c.profileId);
+      if (p && c.civId != null && p.civId !== c.civId) {
+        p.civId = c.civId;
+        civFixed++;
+      }
+    }
+    continue;
+  }
   const players = (m.teams ?? []).flatMap((t) => t.players ?? []);
   // Avbrutte kamper og kamper uten vinner gir ikke mening i statistikken
   if (m.abandoned || !players.some((p) => p.won === true)) {
@@ -48,7 +60,7 @@ for (const [id, m] of raw) {
   store.matches[id] = normalizeCompanionMatch(m, { ratingIsBefore });
   added++;
 }
-console.log(`rating er ${ratingIsBefore ? 'før' : 'etter'} kampen. ${added} nye kamper, ${skipped} hoppet over (avbrutt/uten vinner). Totalt ${Object.keys(store.matches).length}.`);
+console.log(`rating er ${ratingIsBefore ? 'før' : 'etter'} kampen. ${added} nye kamper, civ rettet for ${civFixed} spillere, ${skipped} hoppet over (avbrutt/uten vinner). Totalt ${Object.keys(store.matches).length}.`);
 
 if (dryRun) {
   console.log('--dry-run: lagret ikke.');
