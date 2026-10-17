@@ -24,7 +24,7 @@ async function poll() {
 const server = createServer(async (req, res) => {
   const { pathname } = new URL(req.url, 'http://localhost');
 
-  if (pathname === '/api/stats') {
+  if (pathname === '/api/stats' || pathname === '/api/stats.json') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(computeStats(store, PLAYERS)));
   }

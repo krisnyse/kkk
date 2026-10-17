@@ -6,7 +6,7 @@ const date = (t) => new Date(t * 1000).toLocaleDateString('no-NO', { day: 'numer
 const time = (t) => new Date(t * 1000).toLocaleString('no-NO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const minutes = (s) => (s ? `${Math.round(s / 60)} min` : '');
 
-const stats = await fetch('/api/stats').then((r) => r.json());
+const stats = await fetch('api/stats.json').then((r) => r.json());
 
 document.getElementById('updated').textContent = stats.updatedAt
   ? `${stats.totalMatches} kamper lagret · sist oppdatert ${new Date(stats.updatedAt).toLocaleString('no-NO')}`

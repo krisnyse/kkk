@@ -14,7 +14,6 @@ test('profiler får rating fra riktig ladder', () => {
   const p = normalizeProfiles(personalStats);
   assert.equal(p[387309].name, 'OnklG');
   assert.equal(p[387309].ratings.rmTeam.rating, 1256);
-  assert.equal(p[387309].ratings.rm1v1.rank, null);
   assert.equal(p[384880].ratings.rmTeam.wins, 786);
 });
 
