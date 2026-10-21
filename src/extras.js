@@ -98,7 +98,7 @@ export function records(matches, clanIds, nameOf) {
       const c = change(p);
       if (c != null && (!bestGain || c > bestGain.change)) bestGain = { ...matchRef(m), name: nameOf(p.profileId), change: c };
       if (c != null && (!worstDrop || c < worstDrop.change)) worstDrop = { ...matchRef(m), name: nameOf(p.profileId), change: c };
-      if (p.newRating && (!peaks.get(p.profileId) || p.newRating > peaks.get(p.profileId).rating)) {
+      if (p.newRating && !p.account && (!peaks.get(p.profileId) || p.newRating > peaks.get(p.profileId).rating)) {
         peaks.set(p.profileId, { name: nameOf(p.profileId), rating: p.newRating, start: m.start, id: m.id });
       }
     }
@@ -138,7 +138,7 @@ export function weekly(store, players, now) {
     for (const m of all) {
       if (m.start > t) break;
       if (!TEAM_RM.has(m.matchType)) continue;
-      const p = m.players.find((x) => x.profileId === id);
+      const p = m.players.find((x) => x.profileId === id && !x.account);
       if (p?.newRating) r = p.newRating;
     }
     return r;

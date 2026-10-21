@@ -5,11 +5,12 @@ import { loadStore } from '../src/store.js';
 import { computeStats } from '../src/stats.js';
 import { matchDetail } from '../src/extras.js';
 import { PERIODS, periodStart } from '../src/periods.js';
+import { mergeAccounts } from '../src/accounts.js';
 
 const DIST = new URL('../dist/', import.meta.url).pathname;
 const PUBLIC_DIR = new URL('../public/', import.meta.url).pathname;
 
-const store = await loadStore(DATA_FILE);
+const store = mergeAccounts(await loadStore(DATA_FILE), PLAYERS);
 await rm(DIST, { recursive: true, force: true });
 await cp(PUBLIC_DIR, DIST, { recursive: true });
 await cp(new URL('../src/periods.js', import.meta.url), `${DIST}periods.js`);

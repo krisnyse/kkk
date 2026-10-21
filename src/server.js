@@ -7,12 +7,13 @@ import { collect } from './collector.js';
 import { computeStats } from './stats.js';
 import { matchDetail } from './extras.js';
 import { periodStart } from './periods.js';
+import { allProfileIds, mergeAccounts } from './accounts.js';
 
 const PUBLIC_DIR = new URL('../public/', import.meta.url).pathname;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
 
 const store = await loadStore(DATA_FILE);
-const ids = PLAYERS.map((p) => p.profileId);
+const ids = allProfileIds(PLAYERS);
 let fetchedAt = store.updatedAt;
 
 async function poll() {
@@ -32,12 +33,12 @@ const server = createServer(async (req, res) => {
   const api = pathname.match(/^\/api\/stats(?:-(\w+))?(?:\.json)?$/);
   if (api) {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify(computeStats(store, PLAYERS, { since: periodStart(api[1]), fetchedAt })));
+    return res.end(JSON.stringify(computeStats(mergeAccounts(store, PLAYERS), PLAYERS, { since: periodStart(api[1]), fetchedAt })));
   }
 
   const match = pathname.match(/^\/api\/match\/(\d+)(?:\.json)?$/);
   if (match) {
-    const detail = matchDetail(store, PLAYERS, match[1]);
+    const detail = matchDetail(mergeAccounts(store, PLAYERS), PLAYERS, match[1]);
     res.writeHead(detail ? 200 : 404, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(detail));
   }
