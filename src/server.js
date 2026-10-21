@@ -10,7 +10,7 @@ import { periodStart } from './periods.js';
 import { allProfileIds, mergeAccounts } from './accounts.js';
 
 const PUBLIC_DIR = new URL('../public/', import.meta.url).pathname;
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
 const store = await loadStore(DATA_FILE);
 const ids = allProfileIds(PLAYERS);
