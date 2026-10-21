@@ -144,6 +144,27 @@ export function computeStats(store, players, { since = null, now = Date.now(), f
     .filter((m) => since == null || m.start >= since)
     .sort((a, b) => a.start - b.start);
 
+  // Kortversjon av en kamp, til «Siste kamper» og «Beste prestasjon»
+  const summary = (m) => ({
+    id: m.id,
+    start: m.start,
+    duration: m.end && m.start ? m.end - m.start : null,
+    map: mapName(m.mapFile),
+    type: m.typeName ?? matchTypeName(m.matchType),
+    expected: expectedScore(m, clanIds),
+    teams: [...Map.groupBy(m.players, (p) => p.team).entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([, ps]) => ({
+        won: ps[0].won,
+        players: ps.map((p) => ({
+          name: clanIds.has(p.profileId) ? nameOf(p.profileId) : null,
+          clan: clanIds.has(p.profileId),
+          civ: civLabel(civKey(p)),
+          ratingChange: p.newRating != null && p.oldRating != null ? p.newRating - p.oldRating : null,
+        })),
+      })),
+  });
+
   const perPlayer = new Map(players.map((p) => [p.profileId, {
     games: 0, wins: 0, civs: new Map(), maps: new Map(), ratingHistory: [],
   }]));
@@ -151,6 +172,7 @@ export function computeStats(store, players, { since = null, now = Date.now(), f
   const clanCivs = new Map();
   const clanMaps = new Map();
   const recent = [];
+  let best = null;
   const byMonth = new Map();
   const enemyCivs = new Map();
   const byRatingDiff = new Map();
@@ -203,25 +225,13 @@ export function computeStats(store, players, { since = null, now = Date.now(), f
       tally(clanMaps, mapName(m.mapFile), team[0].won);
     }
 
-    recent.push({
-      id: m.id,
-      start: m.start,
-      duration: m.end && m.start ? m.end - m.start : null,
-      map: mapName(m.mapFile),
-      type: m.typeName ?? matchTypeName(m.matchType),
-      expected: expectedScore(m, clanIds),
-      teams: [...Map.groupBy(m.players, (p) => p.team).entries()]
-        .sort(([a], [b]) => a - b)
-        .map(([, ps]) => ({
-          won: ps[0].won,
-          players: ps.map((p) => ({
-            name: clanIds.has(p.profileId) ? nameOf(p.profileId) : null,
-            clan: clanIds.has(p.profileId),
-            civ: civLabel(civKey(p)),
-            ratingChange: p.newRating != null && p.oldRating != null ? p.newRating - p.oldRating : null,
-          })),
-        })),
-    });
+    recent.push(summary(m));
+
+    // Beste prestasjon: seieren i rangert lagkamp med lavest vinnersjanse før kampen
+    if (TEAM_RM.has(m.matchType) && ours[0].won) {
+      const e = expectedScore(m, clanIds);
+      if (e && (!best || e.winChance <= best.expected.winChance)) best = { m, expected: e };
+    }
   }
 
   return {
@@ -254,6 +264,7 @@ export function computeStats(store, players, { since = null, now = Date.now(), f
     clanMaps: toList(clanMaps).slice(0, 10),
     recent: recent.reverse().slice(0, 25),
     lastMatch: lastMatch(store, players, nameOf),
+    bestPerformance: best ? summary(best.m) : null,
     form: form(store, players),
     weekly: weekly(store, players, now),
     records: records(matches, clanIds, nameOf),
