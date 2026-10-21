@@ -129,6 +129,12 @@
       <p class="muted small" id="rating-empty" hidden>Ingen rangerte lagkamper i perioden.</p>
     </section>
 
+    <section class="panel">
+      <h2>Elo-banken</h2>
+      <p class="muted small">Lag-RM-Elo hver spiller har vunnet og tapt i perioden (RM 2v2–4v4). Netto er det som står igjen på konto.</p>
+      <table id="elo-bank"></table>
+    </section>
+
     <section class="grid">
       <div class="panel">
         <h2>Lagoppsett</h2>
@@ -152,6 +158,15 @@
     </section>
 
     <section class="panel">
+      <h2>2v2, 3v3 eller 4v4</h2>
+      <p class="muted small">Rangerte lagkamper etter lagstørrelse. Elo per kamp er snittet for oss som spilte.</p>
+      <div class="grid">
+        <div><h4>Klanen</h4><table id="team-sizes"></table></div>
+        <div><h4>Winrate per spiller</h4><table id="team-sizes-players"></table></div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Rekordtavle</h2>
       <p class="muted small">Rangerte lagkamper i perioden. Trykk på en rekord for å se kampen.</p>
       <div class="tiles" id="records"></div>
@@ -170,6 +185,16 @@
       <div class="grid">
         <div><h4>Vanskeligst</h4><table id="enemy-worst"></table></div>
         <div><h4>Lettest</h4><table id="enemy-best"></table></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Erkefiender</h2>
+      <p class="muted small" id="rivals-note">Motstandere vi har møtt flere ganger, alle kamptyper. Trykk på et navn for å se spilleren på aoe2insights.</p>
+      <div class="grid">
+        <div><h4>Møtt oftest</h4><table id="rivals-most"></table></div>
+        <div><h4>Erkefiender</h4><table id="rivals-nemeses"></table></div>
+        <div><h4>Lett bytte</h4><table id="rivals-victims"></table></div>
       </div>
     </section>
 

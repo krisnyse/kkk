@@ -55,6 +55,24 @@ function table(el, rows, nameHeader) {
     </tbody>`;
 }
 
+// Motstandere med navn (lenke til aoe2insights), seire–tap og siste kamp mot dem
+function rivalTable(el, rows) {
+  if (!rows.length) {
+    el.innerHTML = '<tbody><tr><td class="muted">Ingen i perioden.</td></tr></tbody>';
+    return;
+  }
+  el.classList.add('rivals');
+  el.innerHTML = `
+    <thead><tr><th>Motstander</th><th class="num">S–T</th><th class="num">Sist</th></tr></thead>
+    <tbody>${rows.map((o) => `
+      <tr>
+        <td><a href="https://www.aoe2insights.com/user/${o.profileId}/" target="_blank" rel="noopener">${esc(o.name ?? `Spiller ${o.profileId}`)}</a>${o.country ? ` <span class="muted">${esc(o.country.toUpperCase())}</span>` : ''}</td>
+        <td class="num"><span class="up">${o.wins}</span>–<span class="down">${o.losses}</span></td>
+        <td class="num"><a href="#kamp=${o.last.id}" data-match="${o.last.id}" class="${o.last.won ? 'up' : 'down'}" title="${o.last.won ? 'Seier' : 'Tap'} · ${esc(o.last.map)}">${date(o.last.start)}</a></td>
+      </tr>`).join('')}
+    </tbody>`;
+}
+
 // «Data hentet» under logoen, med hvor lenge siden. Oppdateres hvert minutt uten å laste data på nytt.
 function ago(ms) {
   const min = Math.round(ms / 60_000);
@@ -280,6 +298,45 @@ function render(stats) {
   table(document.getElementById('pairs-best'), pairs.best, 'Civer');
   table(document.getElementById('pairs-worst'), pairs.worst, 'Civer');
 
+  // Elo-banken
+  const bank = stats.eloBank.filter((b) => b.games);
+  document.getElementById('elo-bank').innerHTML = bank.length ? `
+    <thead><tr><th>Spiller</th><th class="num narrow-hide">Kamper</th><th class="num">Vunnet</th><th class="num">Tapt</th><th class="num">Netto</th><th class="num narrow-hide">Per kamp</th></tr></thead>
+    <tbody>${bank.map((b) => `
+      <tr>
+        <td><span class="dot inline" style="--c: var(${colorOf.get(b.profileId)})"></span>${esc(b.name)}</td>
+        <td class="num narrow-hide">${b.games}</td>
+        <td class="num up">${signed(b.gained)}</td>
+        <td class="num down">${signed(b.lost)}</td>
+        <td class="num"><b>${upDown(b.net)}</b></td>
+        <td class="num narrow-hide">${upDown(b.perGame)}</td>
+      </tr>`).join('')}
+    </tbody>` : '<tbody><tr><td class="muted">Ingen rangerte lagkamper i perioden.</td></tr></tbody>';
+
+  // Lagstørrelse
+  const sizes = stats.teamSizes.filter((s) => s.games);
+  document.getElementById('team-sizes').innerHTML = sizes.length ? `
+    <thead><tr><th>Lag</th><th class="num">Kamper</th><th class="num">Winrate</th><th class="num">Elo per kamp</th></tr></thead>
+    <tbody>${sizes.map((s) => `
+      <tr>
+        <td>${s.name}</td>
+        <td class="num">${s.games}</td>
+        <td class="num ${s.winRate >= 0.5 ? 'up' : 'down'}">${pct(s.winRate)}</td>
+        <td class="num">${upDown(s.eloPerGame)}</td>
+      </tr>`).join('')}
+    </tbody>` : '<tbody><tr><td class="muted">Ingen rangerte lagkamper i perioden.</td></tr></tbody>';
+  document.getElementById('team-sizes-players').innerHTML = sizes.length ? `
+    <thead><tr><th>Spiller</th>${sizes.map((s) => `<th class="num">${s.name}</th>`).join('')}</tr></thead>
+    <tbody>${stats.players.map((p) => `
+      <tr>
+        <td><span class="dot inline" style="--c: var(${colorOf.get(p.profileId)})"></span>${esc(p.name)}</td>
+        ${sizes.map((s) => {
+          const x = s.players.find((pp) => pp.profileId === p.profileId);
+          return `<td class="num" title="${x.wins} av ${x.games} kamper">${x.games ? pct(x.winRate) : '–'}</td>`;
+        }).join('')}
+      </tr>`).join('')}
+    </tbody>` : '';
+
   // Rekordtavle
   const r = stats.records;
   document.getElementById('records').innerHTML = [
@@ -329,6 +386,15 @@ function render(stats) {
     `Hvor ofte vi vinner mot hver civ på motstanderlaget. Bare civer vi har møtt minst ${t.enemyCivs.minGames} ganger.`;
   table(document.getElementById('enemy-worst'), t.enemyCivs.worst, 'Civ');
   table(document.getElementById('enemy-best'), t.enemyCivs.best, 'Civ');
+
+  // Erkefiender
+  const rv = stats.rivals;
+  document.getElementById('rivals-note').textContent =
+    `Motstandere vi har møtt minst ${rv.minGames} ganger, alle kamptyper. Seire og tap er sett fra vår side. Trykk på et navn for å se spilleren på aoe2insights.`;
+  rivalTable(document.getElementById('rivals-most'), rv.mostMet);
+  rivalTable(document.getElementById('rivals-nemeses'), rv.nemeses);
+  rivalTable(document.getElementById('rivals-victims'), rv.victims);
+
   table(document.getElementById('rating-diff'), t.byRatingDiff, 'Vi var');
   table(document.getElementById('lengths'), t.byLength, 'Lengde');
   table(document.getElementById('weekdays'), t.byWeekday, 'Dag');

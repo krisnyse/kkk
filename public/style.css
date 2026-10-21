@@ -207,3 +207,13 @@ dialog#player-dialog { width: min(860px, calc(100vw - 32px)); border-top: 4px so
 .fetched { margin: 2px 0 0; font-weight: 600; }
 .fetched .muted { font-weight: 400; margin: 0; }
 .fetched-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--win); margin-right: 8px; vertical-align: 1px; }
+
+/* Erkefiender: navn og datoer som lenker, uten standard lenkefarge */
+table.rivals a { color: inherit; text-decoration-color: var(--border); text-underline-offset: 3px; }
+table.rivals a:hover { text-decoration-color: currentColor; }
+table.rivals a.up { color: var(--win); }
+table.rivals a.down { color: var(--loss); }
+
+@media (max-width: 480px) {
+  .narrow-hide { display: none; }
+}

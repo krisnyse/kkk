@@ -245,3 +245,102 @@ export function form(store, players) {
   const trend = wins >= 4 ? 'up' : wins <= 1 ? 'down' : 'flat';
   return { trend, wins, games, eloChange: games.reduce((sum, g) => sum + (g.eloChange ?? 0), 0) };
 }
+
+// Winrate og Elo per lagstørrelse i rangerte lagkamper. Elo per kamp er snittet for oss som spilte.
+const TEAM_SIZES = [[7, '2v2'], [8, '3v3'], [9, '4v4']];
+export function teamSizes(matches, players) {
+  const clanIds = new Set(players.map((p) => p.profileId));
+  return TEAM_SIZES.map(([type, name]) => {
+    const games = matches.filter((m) => m.matchType === type && m.players.some((p) => clanIds.has(p.profileId)));
+    const changes = [];
+    const perPlayer = new Map(players.map((p) => [p.profileId, { profileId: p.profileId, games: 0, wins: 0 }]));
+    let wins = 0;
+    for (const m of games) {
+      const ours = m.players.filter((p) => clanIds.has(p.profileId));
+      if (ours[0].won) wins++;
+      const c = ours.map(change).filter((x) => x != null);
+      if (c.length) changes.push(c.reduce((a, b) => a + b, 0) / c.length);
+      for (const p of ours) {
+        const pp = perPlayer.get(p.profileId);
+        pp.games++;
+        if (p.won) pp.wins++;
+      }
+    }
+    return {
+      key: name,
+      name,
+      games: games.length,
+      wins,
+      winRate: games.length ? wins / games.length : null,
+      eloPerGame: changes.length ? Math.round((changes.reduce((a, b) => a + b, 0) / changes.length) * 10) / 10 : null,
+      eloTotal: changes.length ? Math.round(changes.reduce((a, b) => a + b, 0)) : null,
+      players: [...perPlayer.values()].map((p) => ({ ...p, winRate: p.games ? p.wins / p.games : null })),
+    };
+  });
+}
+
+// Elo-banken: hvor mye lag-RM-Elo hver spiller har vunnet og tapt i perioden, med største gevinst og tap
+export function eloBank(matches, players, nameOf) {
+  const clanIds = new Set(players.map((p) => p.profileId));
+  const bank = new Map(players.map((p) => [p.profileId, {
+    profileId: p.profileId, name: nameOf(p.profileId), games: 0, gained: 0, lost: 0, best: null, worst: null,
+  }]));
+  for (const m of matches) {
+    if (!TEAM_RM.has(m.matchType)) continue;
+    for (const p of m.players) {
+      const c = change(p);
+      if (!clanIds.has(p.profileId) || c == null) continue;
+      const b = bank.get(p.profileId);
+      b.games++;
+      if (c >= 0) b.gained += c;
+      else b.lost += c;
+      if (!b.best || c > b.best.change) b.best = { ...matchRef(m), change: c };
+      if (!b.worst || c < b.worst.change) b.worst = { ...matchRef(m), change: c };
+    }
+  }
+  return [...bank.values()].map((b) => ({
+    ...b,
+    net: b.gained + b.lost,
+    perGame: b.games ? Math.round(((b.gained + b.lost) / b.games) * 10) / 10 : null,
+  }));
+}
+
+// Motstandere vi har møtt på motsatt lag, med hvor ofte vi vant mot dem. Klanens egne kontoer og AI (profile_id -1) telles ikke.
+export function opponents(matches, clanIds) {
+  const seen = new Map();
+  for (const m of matches) {
+    const ours = m.players.filter((p) => clanIds.has(p.profileId));
+    if (!ours.length) continue;
+    for (const p of m.players) {
+      if (p.team === ours[0].team || clanIds.has(p.profileId) || p.profileId <= 0) continue;
+      const o = seen.get(p.profileId) ?? { profileId: p.profileId, games: 0, wins: 0, last: null };
+      o.games++;
+      if (ours[0].won) o.wins++;
+      if (!o.last || m.start > o.last.start) o.last = { id: m.id, start: m.start, map: mapName(m.mapFile), won: ours[0].won };
+      seen.set(p.profileId, o);
+    }
+  }
+  return [...seen.values()];
+}
+
+// Erkefiender: dem vi har møtt oftest, og de vi taper og vinner mest mot blant dem vi har møtt mange ganger.
+// Navnene ligger i store.opponents, hentet av collector.js for motstandere vi har møtt minst RIVAL_MIN_GAMES ganger.
+export const RIVAL_MIN_GAMES = 3;
+export function rivals(matches, clanIds, names = {}) {
+  const all = opponents(matches, clanIds).map((o) => ({
+    ...o,
+    name: names[o.profileId]?.name ?? null,
+    country: names[o.profileId]?.country ?? null,
+    losses: o.games - o.wins,
+    winRate: o.wins / o.games,
+  }));
+  const enough = all.filter((o) => o.games >= RIVAL_MIN_GAMES);
+  const byRecord = (a, b) => a.winRate - b.winRate || b.games - a.games;
+  return {
+    total: all.length,
+    minGames: RIVAL_MIN_GAMES,
+    mostMet: enough.toSorted((a, b) => b.games - a.games || b.last.start - a.last.start).slice(0, 8),
+    nemeses: enough.filter((o) => o.losses > o.wins).sort(byRecord).slice(0, 6),
+    victims: enough.filter((o) => o.wins > o.losses).sort((a, b) => b.winRate - a.winRate || b.games - a.games).slice(0, 6),
+  };
+}
