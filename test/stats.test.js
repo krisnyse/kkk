@@ -238,7 +238,7 @@ test('kamper på andre kontoer telles som hovedkontoen, men ikke i ratinggrafen'
   // Gjør Tom Lobby (384880) om til en annen konto i én lagkamp der han ikke er med fra før
   const m = Object.values(store.matches).find((x) => x.matchType === 7 && !x.players.some((p) => p.profileId === 384880));
   m.players.push({ profileId: 6903748, civId: 1, team: m.players[0].team, won: m.players[0].won, oldRating: 900, newRating: 916 });
-  const players = PLAYERS.map((p) => (p.profileId === 384880 ? { ...p, otherAccounts: [6903748] } : p));
+  const players = PLAYERS.map(({ otherAccounts, ...p }) => (p.profileId === 384880 ? { ...p, otherAccounts: [6903748] } : p));
 
   const before = computeStats(store, players).players.find((p) => p.profileId === 384880);
   const after = computeStats(mergeAccounts(store, players), players).players.find((p) => p.profileId === 384880);
