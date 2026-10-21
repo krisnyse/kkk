@@ -8,6 +8,9 @@ Statistikk-side for klanen vår i Age of Empires II: DE. Henter data fra Relic/W
 - beste kart når vi spiller sammen
 - mest spilte civer per spiller
 - de siste kampene med civ og ratingendring
+- Elo-banken: lag-RM-Elo vunnet og tapt per spiller
+- winrate og Elo per lagstørrelse (2v2, 3v3, 4v4)
+- erkefiender: motstandere vi har møtt oftest, taper mest mot og vinner mest mot (navnene slås opp én gang og lagres i `opponents` i `data/matches.json`)
 
 ## Kom i gang
 

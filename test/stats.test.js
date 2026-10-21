@@ -272,3 +272,79 @@ test('beste prestasjon er seieren med lavest vinnersjanse', () => {
   assert.equal(computeStats(store, PLAYERS, { since: 1500 }).bestPerformance.id, 2);
   assert.equal(computeStats(store, PLAYERS, { since: 2500 }).bestPerformance, null);
 });
+
+test('lagstørrelse, Elo-banken og erkefiender', () => {
+  const [a, b] = PLAYERS.map((p) => p.profileId);
+  const game = (id, matchType, won, opponent, changeA, changeB = null) => ({
+    id, start: id * 1000, end: id * 1000 + 1800, mapFile: 'Arabia.rms', matchType,
+    players: [
+      { profileId: a, team: 1, won, civId: 1, oldRating: 1200, newRating: 1200 + changeA },
+      ...(changeB == null ? [] : [{ profileId: b, team: 1, won, civId: 1, oldRating: 1200, newRating: 1200 + changeB }]),
+      { profileId: opponent, team: 2, won: !won, civId: 2, oldRating: 1200, newRating: 1200 },
+      { profileId: -1, team: 2, won: !won, civId: 2 }, // AI teller ikke som motstander
+    ],
+  });
+  const store = {
+    profiles: {},
+    opponents: { 777: { name: 'Plageånden', country: 'se' } },
+    matches: {
+      1: game(1, 7, false, 777, -12, -10),
+      2: game(2, 7, false, 777, -14),
+      3: game(3, 9, true, 777, 16, 20),
+      4: game(4, 9, false, 777, -8),
+      5: game(5, 8, true, 888, 10),
+      6: game(6, 0, true, 888, 0), // egendefinert: med i erkefiender, ikke i Elo
+      7: game(7, 0, true, 888, 0),
+    },
+  };
+  const s = computeStats(store, PLAYERS);
+
+  const sizes = Object.fromEntries(s.teamSizes.map((x) => [x.name, x]));
+  assert.deepEqual([sizes['2v2'].games, sizes['2v2'].wins, sizes['2v2'].eloPerGame], [2, 0, -12.5]);
+  assert.deepEqual([sizes['4v4'].games, sizes['4v4'].wins, sizes['4v4'].eloPerGame], [2, 1, 5]);
+  assert.equal(sizes['4v4'].players.find((p) => p.profileId === b).games, 1);
+
+  const bankA = s.eloBank.find((x) => x.profileId === a);
+  assert.deepEqual([bankA.games, bankA.gained, bankA.lost, bankA.net], [5, 26, -34, -8]);
+  assert.equal(bankA.best.id, 3);
+  assert.equal(bankA.worst.id, 2);
+
+  const r = s.rivals;
+  assert.equal(r.total, 2);
+  assert.deepEqual(r.mostMet.map((o) => o.profileId), [777, 888]);
+  assert.deepEqual([r.nemeses[0].name, r.nemeses[0].wins, r.nemeses[0].losses], ['Plageånden', 1, 3]);
+  assert.deepEqual(r.victims.map((o) => o.profileId), [888]);
+  assert.equal(r.victims[0].name, null);
+});
+
+test('collect slår opp navn på motstandere vi har møtt flere ganger, bare én gang', async () => {
+  const { collect } = await import('../src/collector.js');
+  const { tmpdir } = await import('node:os');
+  const [a] = PLAYERS.map((p) => p.profileId);
+  const game = (id, opponent) => ({
+    id, start: id, end: id + 1800, mapFile: 'Arabia.rms', matchType: 7,
+    players: [{ profileId: a, team: 1, won: true }, { profileId: opponent, team: 2, won: false }],
+  });
+  const store = { profiles: {}, matches: { 1: game(1, 777), 2: game(2, 777), 3: game(3, 777), 4: game(4, 888) }, updatedAt: null };
+  const asked = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    const ids = JSON.parse(u.searchParams.get('profile_ids'));
+    const body = u.pathname.endsWith('GetPersonalStat')
+      ? { statGroups: ids.filter((id) => id === 777).map((id) => ({ id: id + 1, members: [{ profile_id: id, alias: 'Plageånden', country: 'se' }] })), leaderboardStats: [] }
+      : { matchHistoryStats: [] };
+    asked.push(...ids);
+    return { ok: true, json: async () => ({ result: { code: 0 }, ...body }) };
+  };
+  try {
+    const file = `${tmpdir()}/kkk-collect-test-${process.pid}.json`;
+    await collect(store, [a], file);
+    assert.deepEqual(store.opponents, { 777: { name: 'Plageånden', country: 'se' } });
+    asked.length = 0;
+    await collect(store, [a], file);
+    assert.ok(!asked.includes(777));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
