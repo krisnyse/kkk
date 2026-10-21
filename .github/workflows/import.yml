@@ -1,0 +1,35 @@
+name: Importer historikk
+
+# Kjøres manuelt, f.eks. etter at en spiller har fått en ny konto i config.js.
+# Henter all kamphistorikk fra aoe2companion og legger til kamper vi ikke har.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run import-history
+      - name: Lagre importerte kamper
+        run: |
+          if git diff --quiet -- data/matches.json; then
+            echo "Ingen endringer"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/matches.json
+          git commit -m "data: importer historikk fra aoe2companion"
+          git push

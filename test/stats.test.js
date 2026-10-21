@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeMatch, normalizeProfiles, mapName } from '../src/normalize.js';
 import { computeStats } from '../src/stats.js';
 import { PLAYERS } from '../src/config.js';
+import { allProfileIds, mergeAccounts } from '../src/accounts.js';
 import { personalStats, matchHistory } from './fixtures.js';
 
 function buildStore() {
@@ -230,4 +231,21 @@ test('klan-Elo for «I dag» starter ved midnatt', async () => {
   const since = periodStart('today', now);
   const elo = computeStats(buildStore(), PLAYERS, { since, now }).clanElo;
   if (elo.points.length) assert.equal(elo.points[0].t, since);
+});
+
+test('kamper på andre kontoer telles som hovedkontoen, men ikke i ratinggrafen', () => {
+  const store = buildStore();
+  // Gjør Tom Lobby (384880) om til en annen konto i én lagkamp der han ikke er med fra før
+  const m = Object.values(store.matches).find((x) => x.matchType === 7 && !x.players.some((p) => p.profileId === 384880));
+  m.players.push({ profileId: 6903748, civId: 1, team: m.players[0].team, won: m.players[0].won, oldRating: 900, newRating: 916 });
+  const players = PLAYERS.map((p) => (p.profileId === 384880 ? { ...p, otherAccounts: [6903748] } : p));
+
+  const before = computeStats(store, players).players.find((p) => p.profileId === 384880);
+  const after = computeStats(mergeAccounts(store, players), players).players.find((p) => p.profileId === 384880);
+  assert.equal(after.games, before.games + 1);
+  assert.deepEqual(after.ratingHistory, before.ratingHistory);
+  assert.ok(mergeAccounts(store, players).matches[m.id].players.some((p) => p.profileId === 384880 && p.account === 6903748));
+  // Lageret selv endres ikke
+  assert.ok(m.players.some((p) => p.profileId === 6903748));
+  assert.deepEqual(allProfileIds(players).slice(2, 4), [384880, 6903748]);
 });

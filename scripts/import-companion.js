@@ -4,15 +4,16 @@
 import { PLAYERS, DATA_FILE } from '../src/config.js';
 import { loadStore, saveStore } from '../src/store.js';
 import { fetchAllMatches, normalizeCompanionMatch } from '../src/companion.js';
+import { allProfileIds } from '../src/accounts.js';
 
 const dryRun = process.argv.includes('--dry-run');
 const store = await loadStore(DATA_FILE);
-const clanIds = new Set(PLAYERS.map((p) => p.profileId));
+const clanIds = new Set(allProfileIds(PLAYERS));
 
 const raw = new Map();
-for (const p of PLAYERS) {
-  console.log(`Henter ${p.name} (${p.profileId})`);
-  for (const m of await fetchAllMatches(p.profileId, console.log)) raw.set(m.matchId, m);
+for (const id of clanIds) {
+  console.log(`Henter ${PLAYERS.find((p) => p.profileId === id)?.name ?? 'annen konto'} (${id})`);
+  for (const m of await fetchAllMatches(id, console.log)) raw.set(m.matchId, m);
 }
 console.log(`${raw.size} unike kamper fra aoe2companion`);
 

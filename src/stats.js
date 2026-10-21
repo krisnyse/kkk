@@ -54,7 +54,8 @@ function clanElo(store, players, since, now) {
   for (const m of Object.values(store.matches).sort((a, b) => a.start - b.start)) {
     if (!TEAM_RM.has(m.matchType)) continue;
     for (const p of m.players) {
-      if (clanIds.has(p.profileId) && p.newRating) history.get(p.profileId).push({ t: m.start, rating: p.newRating });
+      // Andre kontoer har sin egen rating, så den holdes utenfor ratinggrafene
+      if (clanIds.has(p.profileId) && p.newRating && !p.account) history.get(p.profileId).push({ t: m.start, rating: p.newRating });
     }
   }
 
@@ -169,7 +170,7 @@ export function computeStats(store, players, { since = null, now = Date.now(), f
       tally(s.civs, civKey(p), p.won);
       tally(s.maps, mapName(m.mapFile), p.won);
       tally(clanCivs, civKey(p), p.won);
-      if (TEAM_RM.has(m.matchType) && p.newRating) s.ratingHistory.push({ t: m.start, rating: p.newRating });
+      if (TEAM_RM.has(m.matchType) && p.newRating && !p.account) s.ratingHistory.push({ t: m.start, rating: p.newRating });
       // Positiv = seiere på rad, negativ = tap på rad
       const st = streaks.get(p.profileId);
       st.current = p.won ? Math.max(st.current, 0) + 1 : Math.min(st.current, 0) - 1;
