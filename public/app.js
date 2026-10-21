@@ -143,6 +143,26 @@ function render(stats) {
       <a class="lm-link" href="#kamp=${lm.id}" data-match="${lm.id}">Se hele kampen →</a>`;
   }
 
+  // Beste prestasjon: seieren med lavest vinnersjanse i valgt periode
+  const bp = stats.bestPerformance;
+  const period = PERIODS.find((p) => p.key === (hashParams().get('periode') ?? 'all'))?.label.toLowerCase() ?? '';
+  const bestBox = document.getElementById('best-match');
+  bestBox.innerHTML = bp ? `
+    <h2>Beste prestasjon i perioden</h2>
+    <p class="muted small">Seieren i rangert lagkamp med lavest vinnersjanse før kampen, ut fra snittrating (${esc(period)}).</p>
+    <a class="bm-body" href="#kamp=${bp.id}" data-match="${bp.id}">
+      <div class="bm-chance"><span class="bm-pct">${Math.round(bp.expected.winChance * 100)} %</span><span class="muted">vinnersjanse</span></div>
+      <div class="bm-info">
+        <div class="lm-head"><b>${esc(bp.map)}</b><span>${esc(bp.type)}</span><span class="muted">${time(bp.start)}${bp.duration ? ` · ${minutes(bp.duration)}` : ''}</span>${expectedBadge(bp.expected)}</div>
+        <div class="bm-rating">Snittrating <b>${bp.expected.ourRating}</b> mot <b>${bp.expected.theirRating}</b> <span class="up">(${bp.expected.theirRating - bp.expected.ourRating} lavere enn motstanderne)</span></div>
+        <div class="lm-players">${bp.teams.flatMap((t) => t.players).filter((p) => p.clan).map((p) => `
+          <div><b>${esc(p.name)}</b> ${esc(p.civ)}${p.ratingChange != null ? ` ${upDown(p.ratingChange)}` : ''}</div>`).join('')}</div>
+        <span class="lm-link">Se hele kampen →</span>
+      </div>
+    </a>` : `
+    <h2>Beste prestasjon i perioden</h2>
+    <p class="muted small">Ingen seire i rangerte lagkamper i perioden (${esc(period)}).</p>`;
+
   // Uka som gikk (uavhengig av periode)
   const w = stats.weekly;
   document.getElementById('weekly-range').textContent =

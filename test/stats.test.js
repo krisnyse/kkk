@@ -249,3 +249,26 @@ test('kamper på andre kontoer telles som hovedkontoen, men ikke i ratinggrafen'
   assert.ok(m.players.some((p) => p.profileId === 6903748));
   assert.deepEqual(allProfileIds(players).slice(2, 4), [384880, 6903748]);
 });
+
+test('beste prestasjon er seieren med lavest vinnersjanse', () => {
+  const ids = PLAYERS.map((p) => p.profileId);
+  const game = (id, start, won, ours, theirs, matchType = 8) => ({
+    id, start, end: start + 1800, mapFile: 'Arabia.rms', matchType,
+    players: [
+      { profileId: ids[0], team: 1, won, civId: 1, oldRating: ours, newRating: ours + 10 },
+      { profileId: 900 + id, team: 2, won: !won, civId: 2, oldRating: theirs, newRating: theirs - 10 },
+    ],
+  });
+  const store = {
+    profiles: {},
+    matches: {
+      1: game(1, 1000, true, 1200, 1250),
+      2: game(2, 2000, true, 1100, 1300), // størst underdog-seier
+      3: game(3, 3000, false, 1000, 1400), // tap teller ikke
+      4: game(4, 4000, true, 1000, 1400, 6), // 1v1 teller ikke
+    },
+  };
+  assert.equal(computeStats(store, PLAYERS).bestPerformance.id, 2);
+  assert.equal(computeStats(store, PLAYERS, { since: 1500 }).bestPerformance.id, 2);
+  assert.equal(computeStats(store, PLAYERS, { since: 2500 }).bestPerformance, null);
+});
