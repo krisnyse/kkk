@@ -1,5 +1,5 @@
 // Engangsimport av eldre kamper fra aoe2companion inn i data/matches.json.
-// Kamper som allerede finnes (fra Relic-API-et) beholdes som de er.
+// Kamper som allerede finnes (fra Relic-API-et) beholdes, men civ og kart rettes etter aoe2companion.
 //   node scripts/import-companion.js [--dry-run]
 import { PLAYERS, DATA_FILE } from '../src/config.js';
 import { loadStore, saveStore } from '../src/store.js';
@@ -39,6 +39,7 @@ if (check.before + check.after === 0) console.warn('Ingen overlapp å sjekke rat
 let added = 0;
 let skipped = 0;
 let civFixed = 0;
+let mapFixed = 0;
 for (const [id, m] of raw) {
   const existing = store.matches[id];
   if (existing) {
@@ -51,6 +52,11 @@ for (const [id, m] of raw) {
         civFixed++;
       }
     }
+    // Relics `mapname` er ofte feil for automatch (f.eks. MegaRandom når kartet var Nomad)
+    if (m.mapName && existing.mapFile !== m.mapName) {
+      existing.mapFile = m.mapName;
+      mapFixed++;
+    }
     continue;
   }
   const players = (m.teams ?? []).flatMap((t) => t.players ?? []);
@@ -62,7 +68,7 @@ for (const [id, m] of raw) {
   store.matches[id] = normalizeCompanionMatch(m, { ratingIsBefore });
   added++;
 }
-console.log(`rating er ${ratingIsBefore ? 'før' : 'etter'} kampen. ${added} nye kamper, civ rettet for ${civFixed} spillere, ${skipped} hoppet over (avbrutt/uten vinner). Totalt ${Object.keys(store.matches).length}.`);
+console.log(`rating er ${ratingIsBefore ? 'før' : 'etter'} kampen. ${added} nye kamper, civ rettet for ${civFixed} spillere, kart rettet i ${mapFixed} kamper, ${skipped} hoppet over (avbrutt/uten vinner). Totalt ${Object.keys(store.matches).length}.`);
 
 if (dryRun) {
   console.log('--dry-run: lagret ikke.');

@@ -8,6 +8,7 @@ Statistikk-side for KKK-klanen i Age of Empires II: DE. Ren Node (ingen avhengig
 
 - `src/relic.js` – kall mot Relic/World's Edge community-API
 - `src/collector.js` – henter nye kamper jevnlig og lagrer i `data/matches.json`
+- `src/maps.js` – kartnavn fra `options` i Relic-API-et (`mapname` er ofte feil)
 - `src/stats.js` – regner ut statistikken som `/api/stats` returnerer
 - `src/server.js` – HTTP-server for API og `public/`
 - `src/config.js` – klanmedlemmer (profile_id) og innstillinger

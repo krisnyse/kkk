@@ -1,4 +1,5 @@
 // Gjør om Relic-API-ets rådata til enklere objekter som er lette å lagre og regne på.
+import { mapFromOptions } from './maps.js';
 
 // leaderboard_id i GetPersonalStat
 export const LEADERBOARDS = { 3: 'rm1v1', 4: 'rmTeam', 13: 'ew1v1', 14: 'ewTeam' };
@@ -43,7 +44,8 @@ export function normalizeMatch(raw) {
 
   return {
     id: raw.id,
-    mapFile: raw.mapname,
+    // `mapname` er ofte feil for automatch, så kartet i `options` brukes når vi kjenner id-en
+    mapFile: mapFromOptions(raw.options) ?? raw.mapname,
     matchType: raw.matchtype_id,
     start: raw.startgametime,
     end: raw.completiontime,
