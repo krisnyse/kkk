@@ -1,26 +1,31 @@
-// Midlertidig: skriv ut rådata for kveldens kamper for å finne riktig map-felt.
+// Midlertidig: sammenlign Relics mapname og options med kartet aoe2companion oppgir.
 import zlib from 'node:zlib';
 import { PLAYERS } from '../src/config.js';
 import { allProfileIds } from '../src/accounts.js';
 import { getRecentMatches } from '../src/relic.js';
 
-const IDS = [517037854, 517030536, 517029858, 514528555, 514529078];
+function options(b64) {
+  const inner = Buffer.from(JSON.parse(zlib.inflateSync(Buffer.from(b64, 'base64')).toString()), 'base64');
+  const kv = {};
+  for (let p = 1; p < inner.length;) {
+    const len = inner.readUInt32LE(p);
+    const [k, ...v] = inner.subarray(p + 4, p + 4 + len).toString().split(':');
+    kv[k] = v.join(':');
+    p += 4 + len;
+  }
+  return kv;
+}
+
+const companion = new Map();
+for (const pl of PLAYERS) {
+  const res = await fetch(`https://data.aoe2companion.com/api/matches?profile_ids=${pl.profileId}&page=1&per_page=100`, { headers: { 'User-Agent': 'kkk-dashboard (debug)' } });
+  for (const m of (await res.json()).matches ?? []) companion.set(m.matchId, `${m.map}|${m.mapName}`);
+}
+const seen = new Set();
 const h = await getRecentMatches(allProfileIds(PLAYERS));
 for (const m of h.matchHistoryStats ?? []) {
-  if (!IDS.includes(m.id)) continue;
-  const { matchhistorymember, matchhistoryreportresults, matchurls, ...rest } = m;
-  console.log('=== RELIC', m.id, JSON.stringify(rest));
-  for (const f of ['options', 'slotinfo']) {
-    try {
-      const buf = zlib.inflateSync(Buffer.from(m[f], 'base64'));
-      console.log(f, 'inflated hex:', buf.subarray(0, 64).toString('hex'));
-      console.log(f, 'inflated latin1:', JSON.stringify(buf.toString('latin1').slice(0, 3000)));
-    } catch (e) { console.log(f, 'inflate failed', e.message); }
-  }
-}
-const res = await fetch(`https://data.aoe2companion.com/api/matches?profile_ids=${PLAYERS[0].profileId}&page=1&per_page=10`, { headers: { 'User-Agent': 'kkk-dashboard (debug)' } });
-const c = await res.json();
-for (const m of c.matches ?? []) {
-  const { teams, ...rest } = m;
-  console.log('=== COMPANION', JSON.stringify(rest));
+  if (seen.has(m.id)) continue;
+  seen.add(m.id);
+  const o = options(m.options);
+  console.log('ROW', m.id, m.matchtype_id, m.mapname, 'opt10=' + o['10'], 'opt5=' + o['5'], 'opt52=' + o['52'], 'companion=' + companion.get(m.id));
 }
