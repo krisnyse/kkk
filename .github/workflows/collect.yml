@@ -21,15 +21,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm run collect
-      - name: Lagre nye kamper
-        run: |
-          if git diff --quiet -- data/matches.json && git ls-files --error-unmatch data/matches.json >/dev/null 2>&1; then
-            echo "Ingen endringer"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/matches.json
-          git commit -m "data: oppdater kamper"
-          git push
+      - run: node scripts/debug-map.js
