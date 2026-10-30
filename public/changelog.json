@@ -1,0 +1,12 @@
+[
+  { "date": "2026-10-30", "pr": 21, "title": "Changelog", "text": "Ny «Changelog»-lenke øverst til høyre som viser hva som er nytt på siden." },
+  { "date": "2026-10-30", "pr": 20, "title": "Rekordtavla viser all time", "text": "Rekordtavla viser nå rekorder for hele historikken uansett periodevalg, og «Beste prestasjon» viser årstallet for kampen." },
+  { "date": "2026-10-28", "pr": 19, "title": "Riktig kart på kampene", "text": "Kartet leses fra kampinnstillingene i stedet for kartnavnet fra API-et, som ofte var feil (f.eks. MegaRandom når kartet var Nomad). Gamle kamper er rettet." },
+  { "date": "2026-10-22", "pr": 18, "title": "Elo-banken, lagstørrelse og erkefiender", "text": "Tre nye paneler: Elo vunnet og tapt per spiller, winrate og Elo i 2v2, 3v3 og 4v4, og motstanderne vi møter oftest og har best og verst record mot." },
+  { "date": "2026-10-21", "pr": 17, "title": "Beste prestasjon", "text": "Nytt kort som viser seieren i perioden der vi hadde lavest vinnersjanse før kampen." },
+  { "date": "2026-10-21", "pr": 16, "title": "Hundeikon", "text": "Siden har fått et hundeikon som faneikon og ikon på hjemskjermen." },
+  { "date": "2026-10-21", "pr": 15, "title": "Flere kontoer telles med", "text": "Kampene fra de andre kontoene til OnklG, DataPaven og Kåre Gullballen telles nå med i statistikken." },
+  { "date": "2026-10-21", "pr": 14, "title": "Tom Lobbys andre kontoer", "text": "Kampene fra Tom Lobbys andre kontoer telles som Tom Lobby. Ratingen på disse holdes utenfor ratinggrafene." },
+  { "date": "2026-10-18", "pr": 13, "title": "«I dag» i periodevalget", "text": "Periodevalget har fått «I dag», så du kan se bare kveldens kamper." },
+  { "date": "2026-10-17", "pr": 12, "title": "Når data sist ble hentet", "text": "Toppen av siden viser når kampene sist ble hentet." }
+]
