@@ -12,6 +12,7 @@
 </head>
 <body>
   <header>
+    <a href="#changelog" class="changelog-link" id="changelog-link">Changelog</a>
     <div class="brand">
 <svg class="logo" viewBox="0 0 480 168" role="img" aria-label="KKK Håkky: OnklG, Paven, Sjefen og Ferdi med headset foran hver sin skjerm. Trykk på en for å se statistikken." xmlns="http://www.w3.org/2000/svg">
       <a href="#spiller=387309" data-player-link="387309" class="logo-player">
@@ -245,6 +246,14 @@
     <div id="player-body"></div>
     <div class="chart-wrap player-chart" id="player-chart-wrap"><canvas id="player-chart" aria-label="Lagrating over tid"></canvas></div>
     <div id="player-tables"></div>
+  </dialog>
+
+  <dialog id="changelog-dialog" aria-labelledby="changelog-title">
+    <div class="md-top">
+      <h2 id="changelog-title">Hva er nytt</h2>
+      <button type="button" class="md-close" data-close>Lukk</button>
+    </div>
+    <ol class="changelog" id="changelog-list"><li class="muted">Laster …</li></ol>
   </dialog>
 
   <script src="app.js" type="module"></script>

@@ -25,3 +25,4 @@ npm test
 - Ingen nye avhengigheter uten god grunn; bruk innebygde Node-moduler.
 - Tester med `node --test` i `test/`.
 - Vær forsiktig med antall kall mot Relic-API-et (uoffisielt, udokumentert).
+- Hver ny PR med endringer brukerne ser legger til en oppføring øverst i `public/changelog.json` (dato, PR-nummer, kort tittel og én–to setninger på norsk). Den vises under «Changelog» øverst til høyre på siden.

@@ -613,6 +613,31 @@ playerDialog.addEventListener('click', (e) => {
 });
 playerDialog.addEventListener('close', () => setHash({ spiller: null }));
 
+// Changelog: kort forklaring på det som er nytt, fra changelog.json
+const changelogDialog = document.getElementById('changelog-dialog');
+const changelogList = document.getElementById('changelog-list');
+let changelogLoaded = false;
+document.getElementById('changelog-link').addEventListener('click', async (e) => {
+  e.preventDefault();
+  changelogDialog.showModal();
+  if (changelogLoaded) return;
+  const res = await fetch('changelog.json').catch(() => null);
+  const entries = res?.ok ? await res.json() : null;
+  if (!entries) {
+    changelogList.innerHTML = '<li class="muted">Fant ikke changelogen.</li>';
+    return;
+  }
+  changelogLoaded = true;
+  changelogList.innerHTML = entries.map((c) => `
+    <li>
+      <h3>${esc(c.title)}<span class="date">${new Date(c.date).toLocaleDateString('nb-NO', { day: 'numeric', month: 'long' })}</span></h3>
+      <p>${esc(c.text)}</p>
+    </li>`).join('');
+});
+changelogDialog.addEventListener('click', (e) => {
+  if (e.target === changelogDialog || e.target.closest('[data-close]')) changelogDialog.close();
+});
+
 const startMatch = hashParams().get('kamp');
 const startPlayer = hashParams().get('spiller');
 await show(hashParams().get('periode') ?? 'all');
