@@ -22,6 +22,18 @@ async function getPage(profileId, page) {
   }
 }
 
+// Én kamp. Listene mangler rating for mange kamper fra juli 2022 til august 2023, men enkeltkampen har den.
+export async function fetchMatch(matchId) {
+  const url = `${BASE}/matches/${matchId}`;
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(url, { headers: { 'User-Agent': 'kkk-dashboard (engangsimport)' } });
+    if (res.ok) return res.json();
+    if (res.status === 404) return null;
+    if (attempt >= 3 || (res.status !== 429 && res.status < 500)) throw new Error(`${url}: HTTP ${res.status}`);
+    await sleep(Number(res.headers.get('retry-after') ?? 10) * 1000);
+  }
+}
+
 // Alle kampene til én spiller, nyeste først. Ca. 1 kall i sekundet for å være snill.
 export async function fetchAllMatches(profileId, log = () => {}) {
   const all = [];
@@ -74,3 +86,21 @@ export function normalizeCompanionMatch(m, { ratingIsBefore }) {
     source: 'aoe2companion',
   };
 }
+
+// Fyller inn rating som mangler i en lagret kamp fra en normalisert aoe2companion-kamp. Gir antall spillere som ble fylt.
+export function fillMissingRatings(existing, normalized) {
+  let filled = 0;
+  for (const c of normalized.players) {
+    const p = existing.players.find((x) => x.profileId === c.profileId);
+    if (!p || c.profileId <= 0 || c.oldRating == null || c.newRating == null) continue;
+    if (p.oldRating != null && p.newRating != null) continue;
+    p.oldRating = c.oldRating;
+    p.newRating = c.newRating;
+    filled++;
+  }
+  return filled;
+}
+
+// Rangert kamp der minst én av oss mangler rating
+export const missingClanRating = (m, clanIds) => [6, 7, 8, 9].includes(m.matchType)
+  && m.players.some((p) => clanIds.has(p.profileId) && (p.oldRating == null || p.newRating == null));
