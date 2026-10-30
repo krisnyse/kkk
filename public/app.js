@@ -31,6 +31,24 @@ function tile(label, value, sub = '', matchId = null) {
   return matchId ? `<a class="tile" href="#kamp=${matchId}" data-match="${matchId}">${inner}</a>` : `<div class="tile">${inner}</div>`;
 }
 
+// Ukas MVP: den som har vunnet mest lag-Elo de siste 7 dagene (samme som «Ukens spiller»), men bare med minst én seier
+let mvp = null;
+const weeklyMvp = (w) => (w?.topPlayer?.wins ? w.topPlayer : null);
+const mvpReason = (p) => `Ukas MVP: ${signed(p.ratingChange)} lag-Elo og ${p.wins} av ${p.games} seire de siste 7 dagene`;
+
+// Krone på figuren i logoen. Figurene står med 120 enheters mellomrom, i samme rekkefølge som spillerne.
+function crownLogo(profileId) {
+  document.querySelectorAll('.logo .mvp-crown').forEach((el) => el.remove());
+  const figures = [...document.querySelectorAll('.logo .logo-player')];
+  const i = figures.findIndex((a) => a.dataset.playerLink === String(profileId));
+  if (i < 0) return;
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'mvp-crown');
+  g.setAttribute('transform', `translate(${60 + 120 * i + 20} 4) rotate(18)`);
+  g.innerHTML = `<title>${esc(mvpReason(mvp))}</title><path d="M1 14L0 3l5 4.5 4.5-7.5 4.5 7.5 5-4.5-1 11z" fill="#f2c200" stroke="#a87b00" stroke-width="1.2" stroke-linejoin="round"/><circle cx="9.5" cy="10" r="1.6" fill="#c0392b"/>`;
+  figures[i].querySelector('g').append(g);
+}
+
 let chart = null;
 let eloChart = null;
 let monthChart = null;
@@ -109,12 +127,15 @@ function render(stats) {
     : 'Ingen data hentet ennå. Serveren henter ved oppstart og deretter jevnlig.';
 
 
-  // Spillerkort
+  // Spillerkort. Ukas MVP får krone, og den som spiller nå får et «I kamp»-merke (se renderLive).
+  mvp = weeklyMvp(stats.weekly);
   document.getElementById('players').innerHTML = stats.players.map((p) => {
     const team = p.ratings.rmTeam;
     const solo = p.ratings.rm1v1;
+    const isMvp = mvp?.profileId === p.profileId;
     return `
-      <article class="card" style="--c: var(${colorOf.get(p.profileId)})" data-player-link="${p.profileId}" tabindex="0" role="link" aria-label="Statistikk for ${esc(p.name)}">
+      <article class="card${isMvp ? ' is-mvp' : ''}" style="--c: var(${colorOf.get(p.profileId)})" data-player-link="${p.profileId}" tabindex="0" role="link" aria-label="Statistikk for ${esc(p.name)}${isMvp ? ', ukas MVP' : ''}">
+        <div class="card-badges">${isMvp ? `<span class="mvp" title="${esc(mvpReason(mvp))}">👑 Ukas MVP</span>` : ''}<span class="playing-badge">I kamp nå</span></div>
         <h3>${esc(p.name)}${p.nick && p.nick !== p.name ? ` <span class="nick">«${esc(p.nick)}»</span>` : ''}</h3>
         <div class="stat">Lag-RM <b>${team?.rating ?? '–'}</b></div>
         <div class="stat">Lag W/L <b>${team ? `${team.wins}/${team.losses}` : '–'}</b></div>
@@ -123,6 +144,9 @@ function render(stats) {
         <div class="stat">Kamper i perioden <b>${p.games}</b></div>
       </article>`;
   }).join('');
+
+  crownLogo(mvp?.profileId);
+  markPlaying();
 
   // Form: pil opp, bortover eller ned ut fra de siste 5 kampene (uavhengig av periode)
   const f = stats.form;
@@ -677,6 +701,38 @@ feedbackForm.addEventListener('submit', async (e) => {
     feedbackStatus.textContent = reply?.error ?? 'Klarte ikke å sende. Prøv igjen senere.';
   }
 });
+
+// «Spiller nå»: sjekker /api/live hvert andre minutt mens siden er åpen og synlig
+let playingNow = new Set();
+function markPlaying() {
+  for (const card of document.querySelectorAll('#players .card')) card.classList.toggle('playing', playingNow.has(Number(card.dataset.playerLink)));
+}
+function renderLive(live) {
+  const el = document.getElementById('live');
+  const matches = live?.matches ?? [];
+  playingNow = new Set(matches.flatMap((m) => m.ours.filter((p) => p.clan).map((p) => p.profileId)));
+  markPlaying();
+  el.hidden = !matches.length;
+  el.innerHTML = matches.map((m) => {
+    const mins = Math.max(0, Math.round((Date.now() / 1000 - m.started) / 60));
+    const ours = m.ours.map((p) => `<b>${esc(p.name)}</b>${p.civ ? ` <span class="muted-inline">(${esc(p.civ)})</span>` : ''}`).join(', ');
+    const ratings = m.theirs.map((p) => p.rating).filter((r) => r != null);
+    const theirs = m.theirs.length
+      ? ` mot ${m.theirs.length === 1 ? esc(m.theirs[0].name) : `${m.theirs.length} motstandere`}${ratings.length ? ` (snitt ${Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length)})` : ''}`
+      : '';
+    const what = [m.type, m.map].filter(Boolean).map(esc).join(' på ');
+    return `<div class="live-match"><span class="live-dot" aria-hidden="true"></span><span><span class="live-label">Spiller nå</span> ${ours}${theirs}<span class="live-meta">${what ? `${what} · ` : ''}startet ${time(m.started)} (${mins} min siden)</span></span></div>`;
+  }).join('');
+}
+async function loadLive() {
+  if (document.hidden) return;
+  const res = await fetch('api/live').catch(() => null);
+  if (!res?.ok) return; // da lar vi forrige visning stå
+  renderLive(await res.json().catch(() => null));
+}
+loadLive();
+setInterval(loadLive, 2 * 60_000);
+document.addEventListener('visibilitychange', loadLive);
 
 const startMatch = hashParams().get('kamp');
 const startPlayer = hashParams().get('spiller');
