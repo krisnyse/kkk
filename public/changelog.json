@@ -1,4 +1,5 @@
 [
+  { "date": "2026-10-30", "pr": 22, "title": "Lag-Elo før juli 2022 omregnet", "text": "Lag-Elo ble senket med 300–600 poeng 13. juli 2022. Ratinger fra før det er nå regnet om til dagens skala, så grafene ikke har et kunstig stup og gamle rekorder kan sammenlignes med nye." },
   { "date": "2026-10-30", "pr": 21, "title": "Changelog", "text": "Ny «Changelog»-lenke øverst til høyre som viser hva som er nytt på siden." },
   { "date": "2026-10-30", "pr": 20, "title": "Rekordtavla viser all time", "text": "Rekordtavla viser nå rekorder for hele historikken uansett periodevalg, og «Beste prestasjon» viser årstallet for kampen." },
   { "date": "2026-10-28", "pr": 19, "title": "Riktig kart på kampene", "text": "Kartet leses fra kampinnstillingene i stedet for kartnavnet fra API-et, som ofte var feil (f.eks. MegaRandom når kartet var Nomad). Gamle kamper er rettet." },

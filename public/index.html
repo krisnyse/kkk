@@ -116,7 +116,7 @@
     <section class="panel clan-elo">
       <div>
         <h2>Klan-Elo</h2>
-        <p class="muted small">Snittet av lag-RM-ratingen til alle fire. Følger periodevalget.</p>
+        <p class="muted small">Snittet av lag-RM-ratingen til alle fire. Følger periodevalget. Lag-Elo fra før 13. juli 2022 er regnet om til dagens skala.</p>
         <div class="elo-now" id="clan-elo-now">–</div>
         <div class="muted" id="clan-elo-change"></div>
       </div>
@@ -126,6 +126,7 @@
     <section class="panel">
       <h2>Lagrating over tid</h2>
       <p class="muted small">Ny rating etter hver rangert lagkamp (RM 2v2–4v4). Den stiplede linja er klansnittet, det samme som klan-Elo.</p>
+      <p class="muted small elo-reset-note">Utviklerne senket all lag-Elo med 300–600 poeng 13. juli 2022 uten å publisere formelen. Ratinger fra før det er regnet om til dagens skala (ca. 0,49 × gammel + 417), estimert fra våre egne kamper rundt omleggingen. Det gjelder også Elo-banken, rekordene og vinnersjansene. 1v1 ble ikke endret.</p>
       <div class="chart-wrap" id="rating-wrap"><canvas id="rating-chart" aria-label="Lagrating over tid per spiller og klansnitt"></canvas></div>
       <p class="muted small" id="rating-empty" hidden>Ingen rangerte lagkamper i perioden.</p>
     </section>

@@ -348,7 +348,7 @@ function render(stats) {
     r.bestGain && tile('Største ratinghopp', upDown(r.bestGain.change), `${esc(r.bestGain.name)} · ${esc(r.bestGain.map)} · ${date(r.bestGain.start)}`, r.bestGain.id),
     r.worstDrop && tile('Største ratingfall', upDown(r.worstDrop.change), `${esc(r.worstDrop.name)} · ${esc(r.worstDrop.map)} · ${date(r.worstDrop.start)}`, r.worstDrop.id),
     r.busiestDay && tile('Flest kamper på én dag', r.busiestDay.games, `${day(r.busiestDay.day)} · ${r.busiestDay.wins} seire`),
-    ...r.peaks.map((p) => tile(`Høyeste lag-RM, ${esc(p.name)}`, p.rating, date(p.start), p.id)),
+    ...r.peaks.map((p) => tile(`Høyeste lag-RM, ${esc(p.name)}`, p.rating, `${date(p.start)}${p.start < stats.eloReset?.cutoff ? ' · omregnet' : ''}`, p.id)),
   ].filter(Boolean).join('') || '<p class="muted small">Ingen rangerte lagkamper ennå.</p>';
 
   // Trender
@@ -491,6 +491,7 @@ function renderMatch(m) {
         </tbody></table>
       </div>`).join('')}
     </div>
+    ${m.eloAdjusted ? '<p class="muted small">Ratingene er regnet om til dagens skala fordi kampen er fra før lag-Elo ble senket 13. juli 2022.</p>' : ''}
     ${m.mapGames ? `<p class="muted small">Vi på ${esc(m.map)}: ${m.mapWins} av ${m.mapGames} seire. Motstandere lenker til aoe2insights.</p>` : ''}`;
 }
 

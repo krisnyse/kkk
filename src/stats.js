@@ -1,6 +1,7 @@
 // Regner ut all statistikken siden viser, fra lagrede kamper.
 import { civName } from './civs.js';
 import { mapName, matchTypeName } from './normalize.js';
+import { TEAM_ELO_RESET, normalizeTeamElo } from './elo.js';
 import { civPairs4v4, eloBank, expectedScore, form, records, rivals, teamSizes, weekly } from './extras.js';
 
 const TEAM_RM = new Set([7, 8, 9]);
@@ -138,6 +139,8 @@ function enemyCivsList(map) {
 // now: millisekunder; tidspunktet klan-Elo-tidslinjen regnes bakover fra
 // fetchedAt er når data sist ble hentet. Serveren vet det; den statiske versjonen bruker siste henting med nye kamper.
 export function computeStats(store, players, { since = null, now = Date.now(), fetchedAt = store.updatedAt } = {}) {
+  // Lag-Elo fra før omleggingen i juli 2022 regnes om til dagens skala, se elo.js
+  store = { ...store, matches: normalizeTeamElo(store.matches) };
   const clanIds = new Set(players.map((p) => p.profileId));
   const nameOf = (id) => store.profiles[id]?.name ?? players.find((p) => p.profileId === id)?.name ?? String(id);
   const allMatches = Object.values(store.matches).sort((a, b) => a.start - b.start);
@@ -239,6 +242,7 @@ export function computeStats(store, players, { since = null, now = Date.now(), f
     since,
     totalMatches: recent.length,
     clanElo: clanElo(store, players, since, now),
+    eloReset: TEAM_ELO_RESET,
     players: players.map(({ profileId, nick }) => {
       const s = perPlayer.get(profileId);
       const profile = store.profiles[profileId] ?? {};

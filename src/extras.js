@@ -1,6 +1,7 @@
 // Civ-par i 4v4, rekordtavle, ukentlig oppsummering og detaljer for én kamp.
 import { civName } from './civs.js';
 import { mapName, matchTypeName } from './normalize.js';
+import { normalizeTeamElo } from './elo.js';
 
 const TEAM_RM = new Set([7, 8, 9]);
 const RM_4V4 = 9;
@@ -189,8 +190,10 @@ export function weekly(store, players, now) {
 
 // Alt om én kamp, til kampsiden
 export function matchDetail(store, players, id) {
-  const m = store.matches[id];
-  if (!m) return null;
+  if (!store.matches[id]) return null;
+  // Samme omregning av gammel lag-Elo som resten av siden
+  const m = normalizeTeamElo({ [id]: store.matches[id] })[id];
+  const eloAdjusted = m !== store.matches[id];
   const clanIds = new Set(players.map((p) => p.profileId));
   const nameOf = (pid) => store.profiles[pid]?.name ?? players.find((p) => p.profileId === pid)?.name ?? String(pid);
   const hasClan = m.players.some((p) => clanIds.has(p.profileId));
@@ -220,6 +223,7 @@ export function matchDetail(store, players, id) {
         })),
       })),
     expected: expectedScore(m, clanIds),
+    eloAdjusted,
     mapGames: onMap.length,
     mapWins: onMap.filter((x) => x.players.find((p) => clanIds.has(p.profileId)).won).length,
   };

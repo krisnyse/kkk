@@ -99,8 +99,10 @@ test('siste kamp har resultat, rating og kartstatistikk', () => {
       { profileId: 999, civId: 2, team: 2, won: !won, oldRating: 1100, newRating: 1100 },
     ],
   });
-  const store = { profiles: {}, matches: { 1: m(1, 1000, true), 2: m(2, 2000, false) } };
-  const lm = computeStats(store, PLAYERS, { now: 3000_000 }).lastMatch;
+  // Etter omleggingen av lag-Elo i 2022, så ratingene ikke regnes om
+  const t0 = 1_800_000_000;
+  const store = { profiles: {}, matches: { 1: m(1, t0 + 1000, true), 2: m(2, t0 + 2000, false) } };
+  const lm = computeStats(store, PLAYERS, { now: (t0 + 3000) * 1000 }).lastMatch;
   assert.equal(lm.id, 2);
   assert.equal(lm.won, false);
   assert.equal(lm.clanPlayers[0].ratingChange, -10);
@@ -285,7 +287,7 @@ test('beste prestasjon er seieren med lavest vinnersjanse', () => {
 test('lagstørrelse, Elo-banken og erkefiender', () => {
   const [a, b] = PLAYERS.map((p) => p.profileId);
   const game = (id, matchType, won, opponent, changeA, changeB = null) => ({
-    id, start: id * 1000, end: id * 1000 + 1800, mapFile: 'Arabia.rms', matchType,
+    id, start: 1_800_000_000 + id * 1000, end: 1_800_000_000 + id * 1000 + 1800, mapFile: 'Arabia.rms', matchType,
     players: [
       { profileId: a, team: 1, won, civId: 1, oldRating: 1200, newRating: 1200 + changeA },
       ...(changeB == null ? [] : [{ profileId: b, team: 1, won, civId: 1, oldRating: 1200, newRating: 1200 + changeB }]),
