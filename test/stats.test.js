@@ -52,6 +52,15 @@ test('statistikk kan begrenses til en tidsperiode', async () => {
   assert.equal(computeStats(store, PLAYERS, { since: periodStart('5y', now) }).totalMatches, 3);
 });
 
+test('rekordtavla er all time og følger ikke periodevalget', async () => {
+  const { periodStart } = await import('../src/periods.js');
+  const store = buildStore();
+  const now = Date.parse('2026-10-17T12:00:00Z');
+  const all = computeStats(store, PLAYERS, { since: null, now }).records;
+  const week = computeStats(store, PLAYERS, { since: periodStart('1w', now), now }).records;
+  assert.deepEqual(week, all);
+});
+
 test('klan-Elo er snittet av siste lag-RM-rating per spiller, dag for dag', () => {
   const now = Date.parse('2026-10-17T12:00:00Z');
   const t = (daysAgo) => now / 1000 - daysAgo * 86400;

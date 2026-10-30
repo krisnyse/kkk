@@ -10,6 +10,7 @@ const axisLabel = (chart, v) => (chart.max - chart.min < 2 * 86400
   ? new Date(v * 1000).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })
   : date(v));
 const time = (t) => new Date(t * 1000).toLocaleString('no-NO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const timeWithYear = (t) => new Date(t * 1000).toLocaleString('no-NO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const month = (key) => new Date(`${key}-15`).toLocaleDateString('no-NO', { month: 'short', year: 'numeric' });
 const minutes = (s) => (s ? `${Math.round(s / 60)} min` : '');
 const signed = (n) => (n == null ? '–' : `${n >= 0 ? '+' : '−'}${Math.abs(n)}`);
@@ -171,7 +172,7 @@ function render(stats) {
     <a class="bm-body" href="#kamp=${bp.id}" data-match="${bp.id}">
       <div class="bm-chance"><span class="bm-pct">${Math.round(bp.expected.winChance * 100)} %</span><span class="muted">vinnersjanse</span></div>
       <div class="bm-info">
-        <div class="lm-head"><b>${esc(bp.map)}</b><span>${esc(bp.type)}</span><span class="muted">${time(bp.start)}${bp.duration ? ` · ${minutes(bp.duration)}` : ''}</span>${expectedBadge(bp.expected)}</div>
+        <div class="lm-head"><b>${esc(bp.map)}</b><span>${esc(bp.type)}</span><span class="muted">${timeWithYear(bp.start)}${bp.duration ? ` · ${minutes(bp.duration)}` : ''}</span>${expectedBadge(bp.expected)}</div>
         <div class="bm-rating">Snittrating <b>${bp.expected.ourRating}</b> mot <b>${bp.expected.theirRating}</b> <span class="up">(${bp.expected.theirRating - bp.expected.ourRating} lavere enn motstanderne)</span></div>
         <div class="lm-players">${bp.teams.flatMap((t) => t.players).filter((p) => p.clan).map((p) => `
           <div><b>${esc(p.name)}</b> ${esc(p.civ)}${p.ratingChange != null ? ` ${upDown(p.ratingChange)}` : ''}</div>`).join('')}</div>
@@ -348,7 +349,7 @@ function render(stats) {
     r.worstDrop && tile('Største ratingfall', upDown(r.worstDrop.change), `${esc(r.worstDrop.name)} · ${esc(r.worstDrop.map)} · ${date(r.worstDrop.start)}`, r.worstDrop.id),
     r.busiestDay && tile('Flest kamper på én dag', r.busiestDay.games, `${day(r.busiestDay.day)} · ${r.busiestDay.wins} seire`),
     ...r.peaks.map((p) => tile(`Høyeste lag-RM, ${esc(p.name)}`, p.rating, date(p.start), p.id)),
-  ].filter(Boolean).join('') || '<p class="muted small">Ingen rangerte lagkamper i perioden.</p>';
+  ].filter(Boolean).join('') || '<p class="muted small">Ingen rangerte lagkamper ennå.</p>';
 
   // Trender
   const t = stats.trends;
