@@ -50,11 +50,11 @@ test('manglende rating fylles inn fra aoe2companion uten å røre rating som fin
   const stored = normalizeCompanionMatch(raw, { ratingIsBefore: true });
   stored.players[0].oldRating = null;
   stored.players[0].newRating = null;
-  stored.players[1].newRating = 1;
+  stored.players[1].newRating = 1; // finnes allerede, skal ikke overskrives
   const clanIds = new Set([387309, 384880]);
   assert.equal(missingClanRating(stored, clanIds), true);
-  assert.equal(fillMissingRatings(stored, normalizeCompanionMatch(raw, { ratingIsBefore: true })), 2);
+  assert.equal(fillMissingRatings(stored, normalizeCompanionMatch(raw, { ratingIsBefore: true })), 1);
   assert.deepEqual([stored.players[0].oldRating, stored.players[0].newRating], [1200, 1214]);
-  assert.deepEqual([stored.players[1].oldRating, stored.players[1].newRating], [1180, 1195]);
+  assert.deepEqual([stored.players[1].oldRating, stored.players[1].newRating], [1180, 1]);
   assert.equal(missingClanRating(stored, clanIds), false);
 });
