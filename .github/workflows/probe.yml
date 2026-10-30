@@ -1,0 +1,12 @@
+name: probe
+on: push
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "== companion match"; curl -s -m 30 -A 'kkk-dashboard (sjekk)' 'https://data.aoe2companion.com/api/matches/215384929' | head -c 2500; echo
+          echo "== companion list page"; curl -s -m 30 -A 'kkk-dashboard (sjekk)' 'https://data.aoe2companion.com/api/matches?profile_ids=384880&page=1&per_page=5&leaderboard_ids=rm_team' | head -c 1500; echo
+          echo "== companion rating history"; curl -s -m 30 -A 'kkk-dashboard (sjekk)' 'https://data.aoe2companion.com/api/profiles/384880?extend=stats,ratings' | head -c 3000; echo
+          echo "== insights match"; curl -s -m 30 -A 'Mozilla/5.0' 'https://www.aoe2insights.com/match/215384929/' -o m.html -w '%{http_code}\n'; grep -oiE '(rating|elo)[^<]{0,80}' m.html | head -20; grep -oE '>1[0-9]{3}<' m.html | head -20
+          echo "== insights user rating"; curl -s -m 30 -A 'Mozilla/5.0' 'https://www.aoe2insights.com/user/384880/elo-history/4/' -o e.html -w '%{http_code}\n'; head -c 1500 e.html | tr -s ' \n'
