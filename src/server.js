@@ -9,6 +9,7 @@ import { matchDetail } from './extras.js';
 import { periodStart } from './periods.js';
 import { allProfileIds, mergeAccounts } from './accounts.js';
 import { handleFeedback, readJson } from './feedback.js';
+import { cachedServerNews } from './servernews.js';
 
 const PUBLIC_DIR = new URL('../public/', import.meta.url).pathname;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
@@ -48,6 +49,11 @@ const server = createServer(async (req, res) => {
     const { status, body } = await handleFeedback(await readJson(req), req.socket.remoteAddress);
     res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(body));
+  }
+
+  if (pathname === '/api/server-news') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify(await cachedServerNews()));
   }
 
   if (pathname === '/periods.js') {
