@@ -639,6 +639,45 @@ changelogDialog.addEventListener('click', (e) => {
   if (e.target === changelogDialog || e.target.closest('[data-close]')) changelogDialog.close();
 });
 
+// Forslag / feil: sendes til /api/feedback, som lager en GitHub-issue
+const feedbackDialog = document.getElementById('feedback-dialog');
+const feedbackForm = document.getElementById('feedback-form');
+const feedbackStatus = document.getElementById('feedback-status');
+let feedbackOpenedAt = 0;
+document.getElementById('feedback-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  feedbackOpenedAt = Date.now();
+  feedbackStatus.textContent = '';
+  feedbackStatus.className = 'fb-status';
+  feedbackDialog.showModal();
+});
+feedbackDialog.addEventListener('click', (e) => {
+  if (e.target === feedbackDialog || e.target.closest('[data-close]')) feedbackDialog.close();
+});
+feedbackForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const button = feedbackForm.querySelector('button[type=submit]');
+  const data = Object.fromEntries(new FormData(feedbackForm));
+  button.disabled = true;
+  feedbackStatus.className = 'fb-status';
+  feedbackStatus.textContent = 'Sender …';
+  const res = await fetch('api/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, startedAt: feedbackOpenedAt, page: location.hash || '/' }),
+  }).catch(() => null);
+  const reply = await res?.json().catch(() => null);
+  button.disabled = false;
+  if (res?.ok) {
+    feedbackForm.reset();
+    feedbackStatus.className = 'fb-status ok';
+    feedbackStatus.textContent = 'Takk! Det er sendt.';
+  } else {
+    feedbackStatus.className = 'fb-status err';
+    feedbackStatus.textContent = reply?.error ?? 'Klarte ikke å sende. Prøv igjen senere.';
+  }
+});
+
 const startMatch = hashParams().get('kamp');
 const startPlayer = hashParams().get('spiller');
 await show(hashParams().get('periode') ?? 'all');
