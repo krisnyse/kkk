@@ -1,5 +1,6 @@
 [
   { "date": "2026-10-30", "pr": 28, "title": "Ukas MVP og «Spiller nå»", "text": "Den som har vunnet mest lag-Elo siste 7 dager får krone i logoen og «Ukas MVP» på kortet sitt. Øverst på siden vises det også når noen av oss er i en kamp akkurat nå, med civ, kart og motstandere." },
+  { "date": "2026-10-30", "pr": 27, "title": "Servervedlikehold og nyeste patch", "text": "Nytt kort øverst som viser når neste servervedlikehold er (fra det offisielle AoE-forumet) og nyeste patch med tittel, dato og hva den inneholdt (fra Steam). Kortet blir gult når vedlikeholdet er mindre enn tre døgn unna." },
   { "date": "2026-10-30", "pr": 25, "title": "Forslag og feilmeldinger", "text": "Ny «Forslag / feil»-knapp øverst til høyre. Der kan du foreslå endringer eller si fra om noe som er feil, så havner det rett hos Kristian." },
   { "date": "2026-10-30", "pr": 24, "title": "Nye spillerikoner", "text": "Figurene i logoen har fått nye roller: OnklG er en bikkje, Paven har bispelue, Sjefen har dress og solbriller, og Ferdi er gamer med kaps og håndkontroll." },
   { "date": "2026-10-30", "pr": 23, "title": "Rating fylt inn for 2022–2023", "text": "Kampene fra juli 2022 til august 2023 manglet rating, så ratinggrafene tegnet rette streker over perioden. Ratingen er nå hentet fra aoe2companion for hver kamp." },
