@@ -70,7 +70,7 @@ export function civPairs4v4(matches, clanIds) {
   return { games, minGames, best: enough.slice(0, 8), worst: enough.slice(-8).reverse() };
 }
 
-// Rekorder fra rangerte lagkamper i perioden
+// Rekorder fra rangerte lagkamper (all time)
 export function records(matches, clanIds, nameOf) {
   let upset = null;
   let favLoss = null;

@@ -140,9 +140,8 @@ function enemyCivsList(map) {
 export function computeStats(store, players, { since = null, now = Date.now(), fetchedAt = store.updatedAt } = {}) {
   const clanIds = new Set(players.map((p) => p.profileId));
   const nameOf = (id) => store.profiles[id]?.name ?? players.find((p) => p.profileId === id)?.name ?? String(id);
-  const matches = Object.values(store.matches)
-    .filter((m) => since == null || m.start >= since)
-    .sort((a, b) => a.start - b.start);
+  const allMatches = Object.values(store.matches).sort((a, b) => a.start - b.start);
+  const matches = allMatches.filter((m) => since == null || m.start >= since);
 
   // Kortversjon av en kamp, til «Siste kamper» og «Beste prestasjon»
   const summary = (m) => ({
@@ -267,7 +266,8 @@ export function computeStats(store, players, { since = null, now = Date.now(), f
     bestPerformance: best ? summary(best.m) : null,
     form: form(store, players),
     weekly: weekly(store, players, now),
-    records: records(matches, clanIds, nameOf),
+    // Rekordtavla er all time og følger ikke periodevalget
+    records: records(allMatches, clanIds, nameOf),
     civPairs4v4: civPairs4v4(matches, clanIds),
     teamSizes: teamSizes(matches, players),
     eloBank: eloBank(matches, players, nameOf),
