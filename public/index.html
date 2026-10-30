@@ -12,10 +12,13 @@
 </head>
 <body>
   <header>
-    <nav class="top-links">
-      <a href="#forslag" class="top-link" id="feedback-link">Forslag / feil</a>
-      <a href="#changelog" class="top-link" id="changelog-link">Changelog</a>
-    </nav>
+    <div class="top-right">
+      <nav class="top-links">
+        <a href="#forslag" class="top-link" id="feedback-link">Forslag / feil</a>
+        <a href="#changelog" class="top-link" id="changelog-link">Changelog</a>
+      </nav>
+      <aside class="server-info" id="server-news" aria-label="Servervedlikehold og nyeste patch" hidden></aside>
+    </div>
     <div class="brand">
 <svg class="logo" viewBox="0 0 480 168" role="img" aria-label="KKK Håkky: OnklG som bikkje, Paven som pave, Sjefen som sjef og Ferdi som gamer, med headset foran hver sin skjerm. Trykk på en for å se statistikken." xmlns="http://www.w3.org/2000/svg">
       <a href="#spiller=387309" data-player-link="387309" class="logo-player">
@@ -119,8 +122,6 @@
 
   <main>
     <section class="cards" id="players"></section>
-
-    <section class="panel server-news" id="server-news" aria-label="Servervedlikehold og nyeste patch" hidden></section>
 
     <section class="panel last-match" id="last-match" hidden></section>
 

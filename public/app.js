@@ -733,56 +733,45 @@ async function loadLive() {
 loadLive();
 setInterval(loadLive, 2 * 60_000);
 document.addEventListener('visibilitychange', loadLive);
-// Servervedlikehold og nyeste patch: hentes fra /api/server-news (forumet og Steam, mellomlagret)
+
+// Servervedlikehold og nyeste patch: liten boks øverst til høyre, fra /api/server-news (forumet og Steam, mellomlagret)
 const OSLO = { timeZone: 'Europe/Oslo' };
-const newsTime = (iso) => new Date(iso).toLocaleString('nb-NO', { ...OSLO, weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+const newsTime = (iso) => new Date(iso).toLocaleString('nb-NO', { ...OSLO, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const newsClock = (iso) => new Date(iso).toLocaleTimeString('nb-NO', { ...OSLO, hour: '2-digit', minute: '2-digit' });
-const newsDay = (iso) => new Date(iso).toLocaleDateString('nb-NO', { ...OSLO, day: 'numeric', month: 'long', year: 'numeric' });
-const agoDays = (iso) => {
-  const d = Math.floor((Date.now() - Date.parse(iso)) / 86400_000);
-  return d <= 0 ? 'i dag' : d === 1 ? 'i går' : `for ${d} dager siden`;
-};
+const newsDay = (iso) => new Date(iso).toLocaleDateString('nb-NO', { ...OSLO, day: 'numeric', month: 'short' });
+const ext = (url, text, title = '') => `<a href="${esc(url)}" target="_blank" rel="noopener"${title ? ` title="${esc(title)}"` : ''}>${text}</a>`;
 
 function maintenanceHtml(m, source) {
-  const head = '<div class="label">Servervedlikehold</div>';
-  if (!m || m.error) return `${head}<div class="value small">Klarte ikke å hente</div><div class="sub"><a href="${source}" target="_blank" rel="noopener">Sjekk forumet →</a></div>`;
+  const label = '<span class="si-label">Vedlikehold</span>';
+  if (!m || m.error) return `${label} ${ext(source, 'Se forumet')}`;
   if (m.next) {
     const n = m.next;
-    const when = n.start
-      ? `${newsTime(n.start)}${n.end ? `–${newsClock(n.end)}` : ''}`
-      : `${new Date(`${n.day}T12:00:00Z`).toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' })}, klokkeslett ikke oppgitt`;
-    return `${head}
-      <div class="value small">${n.ongoing ? 'Pågår nå' : esc(when)}</div>
-      <div class="sub">${n.ongoing && n.end ? `Ferdig ca. ${newsClock(n.end)}. ` : ''}Matchmaking stenges en time før. <a href="${esc(n.url)}" target="_blank" rel="noopener">Kunngjøringen →</a></div>`;
+    const when = n.ongoing
+      ? `Pågår nå${n.end ? `, ferdig ca. ${newsClock(n.end)}` : ''}`
+      : n.start ? `${newsTime(n.start)}${n.end ? `–${newsClock(n.end)}` : ''}` : newsDay(`${n.day}T12:00:00Z`);
+    return `${label} ${ext(n.url, `<b>${esc(when)}</b>`, `${n.title}. Matchmaking stenges en time før.`)}`;
   }
   const p = m.previous;
-  return `${head}
-    <div class="value small">Ingen planlagt</div>
-    <div class="sub">${p ? `Forrige var <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(newsDay(p.start ?? `${p.day}T12:00:00Z`))}</a>.` : 'Ingen kunngjøringer på forumet.'}</div>`;
+  return `${label} <b>Ingen planlagt</b>${p ? ` <span class="si-sub">· forrige ${ext(p.url, esc(newsDay(p.start ?? `${p.day}T12:00:00Z`)))}</span>` : ''}`;
 }
 
 function patchHtml(p, source) {
-  const head = '<div class="label">Nyeste patch</div>';
-  if (!p || p.error) return `${head}<div class="value small">Klarte ikke å hente</div><div class="sub"><a href="${source}" target="_blank" rel="noopener">Se Steam-nyhetene →</a></div>`;
-  return `${head}
-    <div class="value small"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a></div>
-    <div class="sub">${esc(newsDay(p.date))} (${agoDays(p.date)})</div>
-    ${p.highlights?.length ? `<ul class="sn-highlights">${p.highlights.map((h) => `<li>${esc(h)}</li>`).join('')}</ul>` : ''}
-    <p class="sn-summary">${esc(p.summary)}</p>`;
+  const label = '<span class="si-label">Patch</span>';
+  if (!p || p.error) return `${label} ${ext(source, 'Se Steam')}`;
+  // Kort navn i boksen («Update 188329»); hele tittelen, innholdet og sammendraget ligger i hint-teksten
+  const short = p.title.match(/(update|patch|hotfix)\s*[\d.]+/i)?.[0] ?? p.title;
+  const hint = [p.title, p.highlights?.length ? `Innhold: ${p.highlights.join(', ')}` : '', p.summary].filter(Boolean).join('\n\n');
+  return `${label} ${ext(p.url, `<b>${esc(short)}</b>`, hint)} <span class="si-sub">· ${esc(newsDay(p.date))}</span>`;
 }
 
 async function loadServerNews() {
   const el = document.getElementById('server-news');
   const res = await fetch('api/server-news').catch(() => null);
   const news = res?.ok ? await res.json().catch(() => null) : null;
-  if (!news) return; // f.eks. lokalt uten nett: kortet forblir skjult
-  const soon = news.maintenance?.next && (news.maintenance.next.ongoing || Date.parse(news.maintenance.next.start ?? news.maintenance.next.day) - Date.now() < 3 * 86400_000);
-  el.classList.toggle('soon', Boolean(soon));
-  el.innerHTML = `
-    <div class="sn-grid">
-      <div class="sn-item">${maintenanceHtml(news.maintenance, news.sources?.maintenance)}</div>
-      <div class="sn-item">${patchHtml(news.patch, news.sources?.patch)}</div>
-    </div>`;
+  if (!news) return; // f.eks. lokalt uten nett: boksen forblir skjult
+  const next = news.maintenance?.next;
+  el.classList.toggle('soon', Boolean(next && (next.ongoing || Date.parse(next.start ?? next.day) - Date.now() < 3 * 86400_000)));
+  el.innerHTML = `<div class="si-row">${maintenanceHtml(news.maintenance, news.sources?.maintenance)}</div><div class="si-row">${patchHtml(news.patch, news.sources?.patch)}</div>`;
   el.hidden = false;
 }
 loadServerNews();
