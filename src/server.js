@@ -9,6 +9,7 @@ import { matchDetail } from './extras.js';
 import { periodStart } from './periods.js';
 import { allProfileIds, mergeAccounts } from './accounts.js';
 import { handleFeedback, readJson } from './feedback.js';
+import { cachedLive } from './live.js';
 import { cachedServerNews } from './servernews.js';
 
 const PUBLIC_DIR = new URL('../public/', import.meta.url).pathname;
@@ -51,6 +52,10 @@ const server = createServer(async (req, res) => {
     return res.end(JSON.stringify(body));
   }
 
+  if (pathname === '/api/live') {
+    const body = await cachedLive(PLAYERS).catch((err) => ({ error: err.message }));
+    res.writeHead(body.error ? 502 : 200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify(body));
   if (pathname === '/api/server-news') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(await cachedServerNews()));
