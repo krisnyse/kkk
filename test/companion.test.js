@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCompanionMatch } from '../src/companion.js';
+import { normalizeCompanionMatch, fillMissingRatings, missingClanRating } from '../src/companion.js';
 import { computeStats } from '../src/stats.js';
 import { PLAYERS } from '../src/config.js';
 
@@ -44,4 +44,17 @@ test('statistikk tåler kamper fra aoe2companion', () => {
   assert.equal(s.lineups[0].wins, 1);
   assert.equal(s.clanMaps[0].name, 'Arabia');
   assert.equal(s.recent[0].type, 'RM 2v2');
+});
+
+test('manglende rating fylles inn fra aoe2companion uten å røre rating som finnes', () => {
+  const stored = normalizeCompanionMatch(raw, { ratingIsBefore: true });
+  stored.players[0].oldRating = null;
+  stored.players[0].newRating = null;
+  stored.players[1].newRating = 1;
+  const clanIds = new Set([387309, 384880]);
+  assert.equal(missingClanRating(stored, clanIds), true);
+  assert.equal(fillMissingRatings(stored, normalizeCompanionMatch(raw, { ratingIsBefore: true })), 2);
+  assert.deepEqual([stored.players[0].oldRating, stored.players[0].newRating], [1200, 1214]);
+  assert.deepEqual([stored.players[1].oldRating, stored.players[1].newRating], [1180, 1195]);
+  assert.equal(missingClanRating(stored, clanIds), false);
 });
