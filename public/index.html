@@ -12,7 +12,10 @@
 </head>
 <body>
   <header>
-    <a href="#changelog" class="changelog-link" id="changelog-link">Changelog</a>
+    <nav class="top-links">
+      <a href="#forslag" class="top-link" id="feedback-link">Forslag / feil</a>
+      <a href="#changelog" class="top-link" id="changelog-link">Changelog</a>
+    </nav>
     <div class="brand">
 <svg class="logo" viewBox="0 0 480 168" role="img" aria-label="KKK Håkky: OnklG som bikkje, Paven som pave, Sjefen som sjef og Ferdi som gamer, med headset foran hver sin skjerm. Trykk på en for å se statistikken." xmlns="http://www.w3.org/2000/svg">
       <a href="#spiller=387309" data-player-link="387309" class="logo-player">
@@ -268,6 +271,33 @@
       <button type="button" class="md-close" data-close>Lukk</button>
     </div>
     <ol class="changelog" id="changelog-list"><li class="muted">Laster …</li></ol>
+  </dialog>
+
+  <dialog id="feedback-dialog" aria-labelledby="feedback-title">
+    <div class="md-top">
+      <h2 id="feedback-title">Forslag eller feil?</h2>
+      <button type="button" class="md-close" data-close>Lukk</button>
+    </div>
+    <form id="feedback-form" class="feedback-form">
+      <fieldset class="fb-type">
+        <legend>Hva gjelder det?</legend>
+        <label><input type="radio" name="type" value="forslag" checked> Forslag til endring</label>
+        <label><input type="radio" name="type" value="feil"> Noe er feil</label>
+      </fieldset>
+      <label>Beskrivelse
+        <textarea name="text" rows="6" maxlength="4000" required minlength="5" placeholder="Hva vil du endre, eller hva er feil? Hvis noe er feil: hvor på siden, og hva burde det vært?"></textarea>
+      </label>
+      <label>Navn eller kallenavn <span class="muted">(valgfritt)</span>
+        <input type="text" name="name" maxlength="60" autocomplete="nickname">
+      </label>
+      <label class="fb-hp" aria-hidden="true">Ikke fyll ut dette feltet
+        <input type="text" name="website" tabindex="-1" autocomplete="off">
+      </label>
+      <div class="fb-actions">
+        <button type="submit" class="fb-send">Send</button>
+        <p class="fb-status" id="feedback-status" role="status"></p>
+      </div>
+    </form>
   </dialog>
 
   <script src="app.js" type="module"></script>

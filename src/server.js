@@ -8,6 +8,7 @@ import { computeStats } from './stats.js';
 import { matchDetail } from './extras.js';
 import { periodStart } from './periods.js';
 import { allProfileIds, mergeAccounts } from './accounts.js';
+import { handleFeedback, readJson } from './feedback.js';
 
 const PUBLIC_DIR = new URL('../public/', import.meta.url).pathname;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
@@ -41,6 +42,12 @@ const server = createServer(async (req, res) => {
     const detail = matchDetail(mergeAccounts(store, PLAYERS), PLAYERS, match[1]);
     res.writeHead(detail ? 200 : 404, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(detail));
+  }
+
+  if (pathname === '/api/feedback' && req.method === 'POST') {
+    const { status, body } = await handleFeedback(await readJson(req), req.socket.remoteAddress);
+    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify(body));
   }
 
   if (pathname === '/periods.js') {

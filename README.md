@@ -44,6 +44,12 @@ Vercel kjører ikke en server som står og går, så nettsiden der er statisk:
 
 Oppsett én gang: importer repoet i Vercel (Add New → Project → `krisnyse/kkk`). `vercel.json` sier resten. Jobben kan også kjøres for hånd under Actions → «Hent kamper» → Run workflow.
 
+## Forslag og feilmeldinger
+
+Knappen «Forslag / feil» øverst på siden sender til `api/feedback.js` (en Vercel-funksjon), som lager en GitHub-issue i repoet med etiketten `fra-siden` og `forslag` eller `feil`. Det krever miljøvariabelen `GITHUB_TOKEN` i Vercel: et fint-granulert token med tilgang bare til dette repoet og **Issues: Read and write**. Uten token svarer skjemaet at innsending ikke er satt opp. `FEEDBACK_REPO` kan settes for å bruke et annet repo enn `krisnyse/kkk`.
+
+Spambeskyttelse: et skjult felt bots fyller ut, minst 3 sekunder fra skjemaet åpnes til det sendes, og maks 5 innsendinger per IP per time.
+
 ## Viktig å vite
 
 - API-et er uoffisielt og udokumentert. Det kan endre seg uten varsel.
