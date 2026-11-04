@@ -7,17 +7,59 @@ const TYPES = { forslag: 'Forslag', feil: 'Feil' };
 const MAX_TEXT = 4000;
 const MAX_NAME = 60;
 const MIN_FILL_MS = 3000; // raskere enn dette er nesten alltid en bot
-const RATE_LIMIT = 5; // innsendinger per IP per time
-const RATE_WINDOW_MS = 60 * 60_000;
+// Grenser for innsending. Per IP: maks 3 per 10 min og 10 per døgn.
+// Globalt: maks 20 per time totalt (sjekkes både i minnet og mot GitHub).
+const IP_LIMITS = [
+  { max: 3, windowMs: 10 * 60_000 },
+  { max: 10, windowMs: 24 * 60 * 60_000 },
+];
+const GLOBAL_LIMIT = { max: 20, windowMs: 60 * 60_000 };
+const LONGEST_WINDOW_MS = Math.max(GLOBAL_LIMIT.windowMs, ...IP_LIMITS.map((l) => l.windowMs));
 
-// Teller per IP. Ligger i minnet, så på Vercel gjelder den per instans – godt nok mot enkel spam.
-const hits = new Map();
+// Tellere i minnet. På Vercel gjelder de per instans og nullstilles ved kald start,
+// så den globale grensen sjekkes i tillegg mot faktiske issues på GitHub (se recentIssueCount).
+const hits = new Map(); // ip -> [tidspunkt]
+let globalHits = [];
 
-export function rateLimited(ip, now = Date.now()) {
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
-  recent.push(now);
-  hits.set(ip, recent);
-  return recent.length > RATE_LIMIT;
+// Hvor lenge (ms) til en ny innsending fra denne lista er lov, eller 0 hvis den er lov nå.
+function waitFor(times, { max, windowMs }, now) {
+  const recent = times.filter((t) => now - t < windowMs);
+  return recent.length < max ? 0 : recent[recent.length - max] + windowMs - now;
+}
+
+// Sjekker grensene. Gir { ok: true } og registrerer innsendingen, eller { ok: false, retryAfterMs, global }.
+export function checkRateLimit(ip, now = Date.now()) {
+  const key = ip || 'ukjent';
+  const times = (hits.get(key) ?? []).filter((t) => now - t < LONGEST_WINDOW_MS);
+  globalHits = globalHits.filter((t) => now - t < GLOBAL_LIMIT.windowMs);
+  const ipWait = Math.max(...IP_LIMITS.map((l) => waitFor(times, l, now)));
+  if (ipWait > 0) return { ok: false, retryAfterMs: ipWait, global: false };
+  const globalWait = waitFor(globalHits, GLOBAL_LIMIT, now);
+  if (globalWait > 0) return { ok: false, retryAfterMs: globalWait, global: true };
+  times.push(now);
+  hits.set(key, times);
+  globalHits.push(now);
+  if (hits.size > 5000) pruneHits(now);
+  return { ok: true };
+}
+
+function pruneHits(now) {
+  for (const [ip, times] of hits) if (!times.some((t) => now - t < LONGEST_WINDOW_MS)) hits.delete(ip);
+}
+
+// Kun for tester
+export function resetRateLimit() {
+  hits.clear();
+  globalHits = [];
+}
+
+// Norsk feilmelding med omtrentlig ventetid
+export function rateLimitMessage({ retryAfterMs, global }) {
+  const min = Math.max(1, Math.ceil(retryAfterMs / 60_000));
+  const wait = min >= 120 ? `${Math.ceil(min / 60)} timer` : min === 1 ? 'ett minutt' : `${min} minutter`;
+  return global
+    ? `Det har kommet inn veldig mange forslag og feilmeldinger akkurat nå. Prøv igjen om ${wait}.`
+    : `Du har sendt mange på kort tid. Vent litt og prøv igjen om ${wait}.`;
 }
 
 // Sjekker skjemaet. Gir { error } eller { spam } eller { issue }.
@@ -47,6 +89,22 @@ export function buildIssue(input, now = Date.now()) {
 const noMention = (s) => s.replaceAll('@', '@​');
 const quote = (s) => noMention(s).split('\n').map((l) => `> ${l}`).join('\n');
 
+// Antall issues fra siden laget siste time, hentet fra GitHub. Gir null hvis det ikke lar seg sjekke.
+export async function recentIssueCount({ token = process.env.GITHUB_TOKEN, repo = process.env.FEEDBACK_REPO || DEFAULT_REPO, now = Date.now() } = {}) {
+  const since = new Date(now - GLOBAL_LIMIT.windowMs).toISOString();
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/issues?labels=fra-siden&state=all&since=${since}&per_page=100`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'kkk-dashboard', 'X-GitHub-Api-Version': '2022-11-28' },
+    });
+    if (!res.ok) return null;
+    const issues = await res.json();
+    // «since» gjelder sist oppdatert, så vi teller bare de som faktisk ble laget i vinduet
+    return issues.filter((i) => Date.parse(i.created_at) > now - GLOBAL_LIMIT.windowMs).length;
+  } catch {
+    return null;
+  }
+}
+
 export async function createIssue(issue, { token = process.env.GITHUB_TOKEN, repo = process.env.FEEDBACK_REPO || DEFAULT_REPO } = {}) {
   const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
     method: 'POST',
@@ -70,7 +128,12 @@ export async function handleFeedback(input, ip) {
   // Bots får «takk» så de ikke prøver på nytt
   if (spam) return { status: 200, body: { ok: true } };
   if (error) return { status: 400, body: { error } };
-  if (rateLimited(ip || 'ukjent')) return { status: 429, body: { error: 'Du har sendt mange på kort tid. Prøv igjen om en time.' } };
+  const limit = checkRateLimit(ip);
+  if (!limit.ok) return tooMany(limit);
+  // Den globale grensen sjekkes også mot GitHub, siden tellerne i minnet ikke deles mellom Vercel-instanser.
+  // Feiler sjekken, slipper vi innsendingen gjennom.
+  const count = await recentIssueCount();
+  if (count !== null && count >= GLOBAL_LIMIT.max) return tooMany({ retryAfterMs: 15 * 60_000, global: true });
   try {
     await createIssue(issue);
     return { status: 200, body: { ok: true } };
@@ -78,6 +141,11 @@ export async function handleFeedback(input, ip) {
     console.error('Klarte ikke å lage issue:', err.message);
     return { status: 502, body: { error: 'Klarte ikke å sende. Prøv igjen senere.' } };
   }
+}
+
+function tooMany(limit) {
+  const retryAfter = Math.max(1, Math.ceil(limit.retryAfterMs / 1000));
+  return { status: 429, headers: { 'Retry-After': String(retryAfter) }, body: { error: rateLimitMessage(limit), retryAfter } };
 }
 
 // Leser JSON-body fra en vanlig Node-request (maks 16 kB)
