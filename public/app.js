@@ -698,7 +698,9 @@ feedbackForm.addEventListener('submit', async (e) => {
     feedbackStatus.textContent = 'Takk! Det er sendt.';
   } else {
     feedbackStatus.className = 'fb-status err';
-    feedbackStatus.textContent = reply?.error ?? 'Klarte ikke å sende. Prøv igjen senere.';
+    feedbackStatus.textContent = reply?.error ?? (res?.status === 429
+      ? 'Du har sendt mange på kort tid. Vent litt og prøv igjen.'
+      : 'Klarte ikke å sende. Prøv igjen senere.');
   }
 });
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildIssue, rateLimited } from '../src/feedback.js';
+import { buildIssue, checkRateLimit, rateLimitMessage, resetRateLimit } from '../src/feedback.js';
 
 const now = 1_000_000;
 const valid = { type: 'feil', text: 'Kartet er feil på kampen i går', name: 'Paven', startedAt: now - 10_000, page: '#kamp=1' };
@@ -31,9 +31,36 @@ test('@-omtaler varsler ikke folk på GitHub', () => {
   assert.doesNotMatch(issue.title, /@krisnyse/);
 });
 
-test('rate limit etter fem innsendinger per time', () => {
-  for (let i = 0; i < 5; i++) assert.equal(rateLimited('1.2.3.4', now + i), false);
-  assert.equal(rateLimited('1.2.3.4', now + 6), true);
-  assert.equal(rateLimited('5.6.7.8', now + 6), false);
-  assert.equal(rateLimited('1.2.3.4', now + 61 * 60_000), false);
+test('per IP: maks tre innsendinger per ti minutter', () => {
+  resetRateLimit();
+  for (let i = 0; i < 3; i++) assert.equal(checkRateLimit('1.2.3.4', now + i).ok, true);
+  const blocked = checkRateLimit('1.2.3.4', now + 5);
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.global, false);
+  assert.ok(blocked.retryAfterMs > 9 * 60_000 && blocked.retryAfterMs <= 10 * 60_000);
+  assert.equal(checkRateLimit('5.6.7.8', now + 5).ok, true);
+  assert.equal(checkRateLimit('1.2.3.4', now + 10 * 60_000).ok, true);
+});
+
+test('per IP: maks ti innsendinger per døgn', () => {
+  resetRateLimit();
+  for (let i = 0; i < 10; i++) assert.equal(checkRateLimit('1.2.3.4', now + i * 11 * 60_000).ok, true);
+  const blocked = checkRateLimit('1.2.3.4', now + 10 * 11 * 60_000);
+  assert.equal(blocked.ok, false);
+  assert.ok(blocked.retryAfterMs > 20 * 60 * 60_000);
+});
+
+test('global grense på tjue per time', () => {
+  resetRateLimit();
+  for (let i = 0; i < 20; i++) assert.equal(checkRateLimit(`10.0.0.${i}`, now + i).ok, true);
+  const blocked = checkRateLimit('10.0.1.1', now + 30);
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.global, true);
+});
+
+test('norsk feilmelding med ventetid', () => {
+  assert.match(rateLimitMessage({ retryAfterMs: 7 * 60_000, global: false }), /om 7 minutter/);
+  assert.match(rateLimitMessage({ retryAfterMs: 30_000, global: false }), /om ett minutt/);
+  assert.match(rateLimitMessage({ retryAfterMs: 20 * 60 * 60_000, global: false }), /om 20 timer/);
+  assert.match(rateLimitMessage({ retryAfterMs: 60_000, global: true }), /veldig mange/);
 });

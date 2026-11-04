@@ -47,8 +47,8 @@ const server = createServer(async (req, res) => {
   }
 
   if (pathname === '/api/feedback' && req.method === 'POST') {
-    const { status, body } = await handleFeedback(await readJson(req), req.socket.remoteAddress);
-    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+    const { status, headers, body } = await handleFeedback(await readJson(req), req.socket.remoteAddress);
+    res.writeHead(status, { ...headers, 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify(body));
   }
 
